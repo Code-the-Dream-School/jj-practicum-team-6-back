@@ -1,21 +1,47 @@
 {
-  "name": "bb-practicum-team-1-back",
+  "name": "jj-practicum-team-6-back",
   "version": "1.0.0",
-  "description": "Back-End Repo for Team 1 of Baboon/Bald Eagle Practicum",
+  "description": "Back-End Repo for Team 6 of Jay/Jaguar Eagle Practicum",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "lint": "eslint . --fix",
+    "format": "prettier --write ."
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.14.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-favicon": "^2.0.4",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.5",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "pino": "^9.9.0",
+    "pino-http": "^10.5.0",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "jest": "^30.0.5",
+    "lint-staged": "^16.1.5",
+    "nodemon": "^3.1.10",
+    "pino-pretty": "^13.1.1",
+    "prettier": "^3.6.2",
+    "prisma": "^6.14.0",
+    "supertest": "^7.1.4"
   }
 }

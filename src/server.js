@@ -1,5 +1,13 @@
 const { PORT = 8000 } = process.env;
-const app = require("./app");
+const { connectDB } = require('../src/db/index.js');
+const app = require('./app');
 
-const listener = () => console.log(`Listening on Port ${PORT}!`);
+const listener = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => console.log(`Server is listening on port ${PORT}...`));
+  } catch (error) {
+    console.error(error);
+  }
+};
 app.listen(PORT, listener);
