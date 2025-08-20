@@ -14,7 +14,6 @@ node_modules/
 
 # dotenv environment variables file
 .env
-prisma/migrations/
 
 # Prisma
 /src/generated/prisma

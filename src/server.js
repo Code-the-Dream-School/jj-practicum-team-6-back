@@ -10,4 +10,5 @@ const listener = async () => {
     console.error(error);
   }
 };
-app.listen(PORT, listener);
+
+listener();
