@@ -21,9 +21,7 @@ app.use(requestId);
 app.use(logger('dev'));
 
 // Root (HTML)
-app.get('/', (_req, res) =>
-  res.type('html').send('<h1>Welcome to Retrieve App</h1>')
-);
+app.get('/', (_req, res) => res.status(200).send('Retrieve API v1'));
 
 // Health (JSON for monitoring)
 app.get('/healthz', (req, res) => {
@@ -35,7 +33,7 @@ app.get('/healthz', (req, res) => {
 });
 
 // Static 
-app.use(express.static('public'));
+app.use(express.static(path.resolve(__dirname, '..', 'public')));
 app.use(favicon(path.resolve(__dirname, '..', 'public', 'favicon.ico')));
 
 // API v1
