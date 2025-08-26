@@ -22,5 +22,8 @@ app.use(favicon(__dirname + '/public/favicon.ico'));
 
 // API
 app.use('/api/v1', mainRouter);
+app.get('/', (req, res) => {
+  res.send('<h1>Welcome to Retriev App</h1> ');
+});
 
 module.exports = app;
