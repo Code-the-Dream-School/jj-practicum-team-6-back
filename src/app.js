@@ -20,9 +20,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(requestId);
 app.use(logger('dev'));
 
-// Root (HTML)
-app.get('/', (_req, res) => res.status(200).send('Retrieve API v1'));
-
 // Health (JSON for monitoring)
 app.get('/healthz', (req, res) => {
   res.status(200).json({
@@ -38,9 +35,6 @@ app.use(favicon(path.resolve(__dirname, '..', 'public', 'favicon.ico')));
 
 // API v1
 app.use('/api/v1', mainRouter);
-app.get('/', (req, res) => {
-  res.send('<h1>Welcome to Retriev App</h1> ');
-});
 
 // Final handlers
 app.use(notFound);     // 404 when no routes matched
