@@ -38,6 +38,9 @@ app.use(favicon(path.resolve(__dirname, '..', 'public', 'favicon.ico')));
 
 // API v1
 app.use('/api/v1', mainRouter);
+app.get('/', (req, res) => {
+  res.send('<h1>Welcome to Retriev App</h1> ');
+});
 
 // Final handlers
 app.use(notFound);     // 404 when no routes matched

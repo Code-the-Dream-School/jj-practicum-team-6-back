@@ -15,5 +15,18 @@ node_modules/
 # dotenv environment variables file
 .env
 
+# Prisma
+/src/generated/prisma
+
+# IDE
+.vscode/*
+.vscode-test
+!.vscode/extensions.json
+.idea
+
+# Cloudinary temp/uploads (if any)
+uploads/
+
 # other
 .DS_Store
+Thumbs.db
