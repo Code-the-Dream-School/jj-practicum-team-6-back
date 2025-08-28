@@ -1,16 +1,33 @@
-module.exports = (err, req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const payload = {
-      success: false,
-      error: {
-        code: err.code || (status === 500 ? 'INTERNAL_SERVER_ERROR' : undefined),
-        message: err.message || 'Internal Server Error',
-      },
-      meta: { requestId: req.id },
-    };
-    if (err.details) payload.error.details = err.details;
-    if (process.env.NODE_ENV !== 'production' && err.stack) payload.error.stack = err.stack;
-    if (status >= 500) console.error(err);
-    res.status(status).json(payload);
+module.exports = (err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  const status = err.status || err.statusCode || 500;
+
+  const STATUS_CODE = {
+    400: 'BAD_REQUEST',
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'RESOURCE_NOT_FOUND',
+    409: 'CONFLICT',
+    422: 'UNPROCESSABLE_ENTITY',
+    429: 'TOO_MANY_REQUESTS',
+    500: 'INTERNAL_SERVER_ERROR',
   };
-  
+
+  const code = err.code || STATUS_CODE[status] || 'INTERNAL_SERVER_ERROR';
+  const message = err.publicMessage || err.message || 'Unexpected error';
+
+  const payload = {
+    success: false,
+    error: { code, message },
+    meta: { requestId: req.id },
+  };
+
+  if (err.details) payload.error.details = err.details;
+  if (process.env.NODE_ENV !== 'production' && err.stack) {
+    payload.error.stack = err.stack;
+  }
+  if (status >= 500) console.error(err);
+
+  res.status(status).json(payload);
+};
