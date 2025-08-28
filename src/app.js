@@ -4,6 +4,7 @@ const app = express();
 const cors = require('cors');
 const favicon = require('express-favicon');
 const logger = require('morgan');
+const { prisma } = require('./utils/prisma');
 
 // Custom middlewares
 const requestId = require('./middleware/requestId');
@@ -28,6 +29,27 @@ app.get('/healthz', (req, res) => {
     meta: { requestId: req.id },
   });
 });
+
+app.get('/healthz/db', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      success: true,
+      data: { db: true },
+      meta: { requestId: req.id },
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DB_UNAVAILABLE',
+        message: e?.message || 'Postgres unreachable',
+      },
+      meta: { requestId: req.id },
+    });
+  }
+});
+
 
 // Static 
 app.use(express.static(path.resolve(__dirname, '..', 'public')));

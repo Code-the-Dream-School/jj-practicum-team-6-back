@@ -8,5 +8,4 @@ if(process.env.NODE_ENV === 'production'){
     prisma = global.__prisma;
 }
 
-module exports = { prisma };
-
+module.exports = { prisma };

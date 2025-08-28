@@ -28,3 +28,19 @@ Note: In the below example, the group's front-end repository was named `bb-pract
 ![browser server](images/back-end-running-browser.png)
 
 >Update the .node-version file to match the version of Node.js the **team** is using. This is used by Render.com to [deploy the app](https://render.com/docs/node-version).
+
+## DB setup (dev)
+
+1) Put the private `DATABASE_URL` (Neon) into your local `.env` (ask a maintainer).
+
+2) Generate Prisma client and apply migrations:
+```bash
+npx prisma generate
+npx prisma migrate dev --name erd_full_init
+3) Start the API:
+npm run dev
+Verify Postgres is reachable:
+curl http://localhost:8000/healthz/db
+Expected:
+{"success":true,"data":{"db":true}}
+Notes: keep real secrets only in local .env / deployment env vars; don’t commit them.
