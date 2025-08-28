@@ -12,3 +12,156 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+/* ---------- ENUMS ---------- */
+enum ItemStatus {
+  LOST     @map("lost")
+  FOUND    @map("found")
+  RESOLVED @map("resolved")
+}
+
+/* ---------- TABLES ---------- */
+
+/* users */
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String   @unique
+  password     String   // hashed
+  phoneNumber  String?  @map("phone_number")
+  zipCode      String   @map("zip_code")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt      @map("updated_at")
+
+  items                Item[]         @relation("UserItems")
+  comments             ItemComment[]  @relation("UserComments")
+  seenMarks            SeenMark[]
+  threadsAsOwner       Thread[]       @relation("OwnerThreads")
+  threadsAsParticipant Thread[]       @relation("ParticipantThreads")
+  messages             Message[]      @relation("UserMessages")
+
+  @@map("users")
+}
+
+/* categories (PK = category_name) */
+model Category {
+  name      String   @id @unique @map("category_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  items     Item[]
+
+  @@map("categories")
+}
+
+/* items */
+model Item {
+  id           String     @id @default(uuid()) @db.Uuid
+  ownerId      String     @map("owner_id")     @db.Uuid
+  categoryName String     @map("category_name")
+  title        String
+  description  String?
+  status       ItemStatus
+  isResolved   Boolean    @default(false)      @map("is_resolved")
+  dateReported DateTime   @default(now())      @map("date_reported")
+  updatedAt    DateTime   @updatedAt           @map("updated_at")
+  zipCode      String     @map("zip_code")
+  latitude     Float?
+  longitude    Float?
+
+  owner     User     @relation("UserItems", fields: [ownerId], references: [id])
+  category  Category @relation(fields: [categoryName], references: [name])
+  photos    ItemPhoto[]
+  comments  ItemComment[]
+  seenMarks SeenMark[]
+  threads   Thread[]
+
+  @@index([status, dateReported])
+  @@index([categoryName])
+  @@index([ownerId])
+  @@map("items")
+}
+
+/* item_photos */
+model ItemPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
+  @@map("item_photos")
+}
+
+/* item_comments */
+model ItemComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  itemId    String   @map("item_id")   @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item   Item @relation(fields: [itemId], references: [id])
+  author User @relation("UserComments", fields: [authorId], references: [id])
+
+  @@index([itemId])
+  @@index([authorId])
+  @@map("item_comments")
+}
+
+/* seen_marks */
+model SeenMark {
+  id        String   @id @default(uuid()) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([itemId, userId])
+  @@index([itemId])
+  @@index([userId])
+  @@map("seen_marks")
+}
+
+/* threads */
+model Thread {
+  id            String   @id @default(uuid()) @db.Uuid
+  itemId        String   @map("item_id")        @db.Uuid
+  ownerId       String   @map("owner_id")       @db.Uuid
+  participantId String   @map("participant_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt      @map("updated_at")
+
+  item        Item @relation(fields: [itemId], references: [id])
+  owner       User @relation("OwnerThreads",       fields: [ownerId],       references: [id])
+  participant User @relation("ParticipantThreads", fields: [participantId], references: [id])
+  messages    Message[]
+
+  @@index([itemId])
+  @@index([ownerId])
+  @@index([participantId])
+  @@map("threads")
+}
+
+/* messages */
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  threadId  String   @map("thread_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  readAt    DateTime?                @map("read_at")
+
+  thread Thread @relation(fields: [threadId], references: [id])
+  sender User   @relation("UserMessages", fields: [senderId], references: [id])
+
+  @@index([threadId, createdAt])
+  @@index([senderId])
+  @@map("messages")
+}
