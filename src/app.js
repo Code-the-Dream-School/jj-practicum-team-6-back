@@ -14,8 +14,25 @@ const errorHandler = require('./middleware/errorHandler');
 // Routers
 const mainRouter = require('./routes/mainRouter.js');
 
+// CORS (env-driven)
+const origins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    if (origins.includes(origin)) return cb(null, true);
+return cb(null, false); 
+  },
+  credentials: String(process.env.CORS_CREDENTIALS).toLowerCase() === 'true',
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+
 // Core middlewares 
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(requestId);
