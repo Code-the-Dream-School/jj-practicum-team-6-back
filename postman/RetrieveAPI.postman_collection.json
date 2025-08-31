@@ -1,0 +1,45 @@
+{
+	"info": {
+		"_postman_id": "d79ec9cb-aff4-49de-bab4-970a4e9fb9c8",
+		"name": "Retrieve API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "4029503"
+	},
+	"item": [
+		{
+			"name": "Healthz",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/healthz",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"healthz"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Healthz DB",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/healthz/db",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"healthz",
+						"db"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
