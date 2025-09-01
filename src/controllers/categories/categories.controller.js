@@ -25,8 +25,15 @@ async function getCategoryById(req, res, next) {
 // POST /api/v1/categories
 async function createCategory(req, res, next) {
   try {
-    const category = await categoriesService.createCategory(req.body);
-    res.status(201).json({ success: true, data: category });
+    const categoryRes = await categoriesService.createCategory(req.body);
+    if (categoryRes.exists) {
+      // Category already exists
+      return res.status(409).json({
+        success: false,
+        message: `Category "${categoryRes.category.name}" already exists`,
+      });
+    }
+    res.status(201).json({ success: true, data: categoryRes.category });
   } catch (err) {
     next(err);
   }
