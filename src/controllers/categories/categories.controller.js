@@ -43,10 +43,11 @@ async function createCategory(req, res, next) {
 async function updateCategory(req, res, next) {
   try {
     const category = await categoriesService.updateCategory(req.params.id, req.body);
-    if (!category) return res.status(404).json({
-      success: false,
-      message: 'Not found or does not exist'
-    });
+    if (!category)
+      return res.status(404).json({
+        success: false,
+        message: 'Not found or does not exist',
+      });
 
     res.status(200).json({ success: true, data: category });
   } catch (err) {
