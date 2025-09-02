@@ -1,3 +1,4 @@
+// src/controllers/categories/categories.controller.js
 const { prisma } = require('../../utils/prisma');
 
 async function findAllSorted() {

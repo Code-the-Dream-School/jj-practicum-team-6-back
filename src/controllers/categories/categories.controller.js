@@ -1,3 +1,4 @@
+// src/controllers/categories/categories.controller.js
 const categoriesService = require('../../services/categories/categories.service');
 
 // GET /api/v1/categories
@@ -26,11 +27,11 @@ async function getCategoryById(req, res, next) {
 async function createCategory(req, res, next) {
   try {
     const categoryRes = await categoriesService.createCategory(req.body);
-    if (categoryRes.exists) {
-      // Category already exists
-      return res.status(409).json({
+    if (categoryRes.error) {
+      // Category name is empty or already exists
+      return res.status(categoryRes.status).json({
         success: false,
-        message: `Category "${categoryRes.category.name}" already exists`,
+        message: categoryRes.message,
       });
     }
     res.status(201).json({ success: true, data: categoryRes.category });

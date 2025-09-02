@@ -1,3 +1,4 @@
+// src/services/categories/categories.service.js
 const categoriesRepo = require('../../repositories/categories/categories.repository');
 
 async function getAllCategories() {
@@ -13,17 +14,29 @@ async function getCategoryById(name) {
 }
 
 async function createCategory(data) {
+  // checking for empty name
+  if (!data.name || data.name.trim() === '') {
+    return {
+      invalid: true,
+      message: 'Category name cannot be empty',
+    };
+  }
+
   // checking if category already exists
   const existing = await categoriesRepo.findByName(data.name);
   if (existing) {
-    return { exists: true, category: existing };
+    return {
+      error: true,
+      status: 409,
+      message: `Category "${existing.name}" already exists`,
+    };
   }
 
   const category = await categoriesRepo.create(data);
   return { exists: false, category };
 }
 
-async function updateCategory(id, data) {
+async function updateCategory(name, data) {
   try {
     const updated = await categoriesRepo.update(name, data);
     return updated;
@@ -36,7 +49,7 @@ async function updateCategory(id, data) {
   }
 }
 
-async function deleteCategory(id) {
+async function deleteCategory(name) {
   try {
     const deleted = await categoriesRepo.remove(name);
     return deleted;
