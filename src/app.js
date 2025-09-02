@@ -1,4 +1,5 @@
 const path = require('path');
+const env = require('./config/env');
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -14,23 +15,23 @@ const errorHandler = require('./middleware/errorHandler');
 // Routers
 const mainRouter = require('./routes/mainRouter.js');
 
-// CORS (env-driven)
-const origins = (process.env.CORS_ORIGINS || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
+// CORS (read values from centralized env)
+const allowedOrigins = env.cors.origins; // array from CORS_ORIGINS
 
 const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    if (origins.includes(origin)) return cb(null, true);
-return cb(null, false); 
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (!allowedOrigins || allowedOrigins.length === 0) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
   },
-  credentials: String(process.env.CORS_CREDENTIALS).toLowerCase() === 'true',
+  credentials: env.cors.credentials,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
 app.use(cors(corsOptions));
+
 
 // Core middlewares 
 app.use(express.json());
