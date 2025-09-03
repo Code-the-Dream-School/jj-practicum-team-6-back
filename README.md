@@ -44,3 +44,15 @@ curl http://localhost:8000/healthz/db
 Expected:
 {"success":true,"data":{"db":true}}
 Notes: keep real secrets only in local .env / deployment env vars; don’t commit them.
+
+## Seeding (Demo Data)
+
+This project includes a Prisma seed script to create:
+- base **categories** (Electronics, Clothing, Keys, Documents, Other)
+- one **demo user**
+- 3–4 **demo items** linked to that user and categories
+
+### Prerequisites
+1. Copy env:
+   ```bash
+   cp .env.example .env
