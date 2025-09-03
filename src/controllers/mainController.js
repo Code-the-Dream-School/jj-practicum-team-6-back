@@ -1,9 +1,14 @@
-const mainController = {};
+const express = require('express');
+const categoriesRouter = require('../routes/categories/categories.router');
+const router = express.Router();
 
-mainController.get = (req, res) => {
+router.get = (req, res) => {
   return res.json({
     data: 'This is a full stack app!',
   });
 };
 
-module.exports = mainController;
+// route /api/v1/categories
+router.use('/categories', categoriesRouter);
+
+module.exports = router;
