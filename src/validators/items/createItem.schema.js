@@ -6,7 +6,7 @@ const createItemSchema = z.object({
   title: z.string().min(2, 'Title is too short'),
   description: z.string().max(1000).optional(),
   status: StatusEnum,
-  categoryId: z.string().uuid('categoryId must be UUID'),
+  categoryName: z.string().min(2, 'categoryName is required'),
   zipCode: z.string().max(20).optional(),
   latitude: z.coerce.number().optional(),
   longitude: z.coerce.number().optional(),
