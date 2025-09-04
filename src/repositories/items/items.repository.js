@@ -1,11 +1,9 @@
-// src/repositories/items/items.repository.js
 const { prisma } = require('../../utils/prisma');
 
 const includeRelations = {
   owner: {
     select: { id: true, firstName: true, lastName: true, email: true },
   },
-  // В Category НЕТ поля id — PK это name
   category: { select: { name: true } },
 };
 
@@ -17,7 +15,7 @@ async function findMany({ filters, pagination }) {
   const whereAND = [];
   if (status) whereAND.push({ status });
   if (typeof isResolved === 'boolean') whereAND.push({ isResolved });
-  if (category) whereAND.push({ categoryName: category }); // фильтр по имени категории
+  if (category) whereAND.push({ categoryName: category });
 
   const where = whereAND.length ? { AND: whereAND } : {};
 
@@ -26,7 +24,7 @@ async function findMany({ filters, pagination }) {
       where,
       skip,
       take: limit,
-      orderBy: { dateReported: 'desc' }, // у тебя это поле есть
+      orderBy: { dateReported: 'desc' }, 
       include: includeRelations,
     }),
     prisma.item.count({ where }),
@@ -51,13 +49,12 @@ async function create(data, ownerId) {
       zipCode: data.zipCode ?? null,
       latitude: data.latitude,
       longitude: data.longitude,
-      // если не передали явно — считаем resolved по статусу
+
       isResolved:
         typeof data.isResolved === 'boolean'
           ? data.isResolved
           : data.status === 'RESOLVED',
       owner: { connect: { id: ownerId } },
-      // ВАЖНО: коннект по name, потому что в схеме PK = name
       category: { connect: { name: data.categoryName } },
     },
     include: includeRelations,
@@ -81,9 +78,78 @@ async function findByOwner(ownerId, { page, limit }) {
   return { items, total };
 }
 
+//Owner-only PATCH /items/:id
+async function updateByOwner(id, ownerId, data) {
+  // Check ownership
+  const found = await prisma.item.findUnique({
+    where: { id },
+    select: { id: true, ownerId: true },
+  });
+  if (!found) return null;
+  if (found.ownerId !== ownerId) {
+    const err = new Error('Forbidden: not your item');
+    err.status = 403;
+    err.code = 'FORBIDDEN';
+    throw err;
+  }
+
+  const patch = {};
+  if (data.title !== undefined) patch.title = data.title;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.zipCode !== undefined) patch.zipCode = data.zipCode;
+  if (data.latitude !== undefined) patch.latitude = data.latitude;
+  if (data.longitude !== undefined) patch.longitude = data.longitude;
+  if (data.isResolved !== undefined) patch.isResolved = data.isResolved;
+  if (data.categoryName !== undefined) patch.categoryName = data.categoryName; // FK by name
+
+  // Auto-set isResolved if status becomes RESOLVED and the flag wasn't provided
+  if (data.status === 'RESOLVED' && data.isResolved === undefined) {
+    patch.isResolved = true;
+  }
+
+  const updated = await prisma.item.update({
+    where: { id },
+    data: patch,
+    include: includeRelations,
+  });
+
+  return updated;
+}
+
+// Owner-only DELETE /items/:id 
+async function deleteByOwner(id, ownerId) {
+  // Check ownership
+  const found = await prisma.item.findUnique({
+    where: { id },
+    select: { id: true, ownerId: true },
+  });
+  if (!found) return null;
+  if (found.ownerId !== ownerId) {
+    const err = new Error('Forbidden: not your item');
+    err.status = 403;
+    err.code = 'FORBIDDEN';
+    throw err;
+  }
+
+  // Clean up dependent records and delete the item
+  await prisma.$transaction([
+    prisma.message.deleteMany({ where: { thread: { itemId: id } } }),
+    prisma.thread.deleteMany({ where: { itemId: id } }),
+    prisma.itemComment.deleteMany({ where: { itemId: id } }),
+    prisma.seenMark.deleteMany({ where: { itemId: id } }),
+    prisma.itemPhoto.deleteMany({ where: { itemId: id } }),
+    prisma.item.delete({ where: { id } }),
+  ]);
+
+  return true;
+}
+
 module.exports = {
   findMany,
   findById,
   create,
   findByOwner,
+  updateByOwner,
+  deleteByOwner,
 };
