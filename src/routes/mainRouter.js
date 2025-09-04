@@ -2,9 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const mainController = require('../controllers/mainController.js');
-const { prisma } = require('../utils/prisma');  
-const authRouter = require('./auth/auth.router'); 
+const { prisma } = require('../utils/prisma');
+const authRouter = require('./auth/auth.router');
 const categoriesRouter = require('../routes/categories/categories.router.js');
+const itemsRouter = require('./items/items.router');
 
 // Root
 router.get('/', mainController.get);
@@ -25,5 +26,7 @@ router.use('/auth', authRouter);
 
 // categories module: /api/v1/categories
 router.use('/categories', categoriesRouter);
+
+router.use('/items', itemsRouter);
 
 module.exports = router;

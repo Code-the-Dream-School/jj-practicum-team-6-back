@@ -1,5 +1,17 @@
+const { ZodError } = require('zod');
+
 module.exports = (err, req, res, next) => {
   if (res.headersSent) return next(err);
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: JSON.stringify(err.issues, null, 2),
+      },
+      meta: { requestId: req.id },
+    });
+  }
 
   const status = err.status || err.statusCode || 500;
 
