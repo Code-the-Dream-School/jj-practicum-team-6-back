@@ -31,4 +31,12 @@ router.patch(
 // DELETE /items/:id (owner-only)
 router.delete('/:id', requireAuth, validate({ params: idParamSchema }), itemsController.deleteItem);
 
+router.patch(
+  '/:id/status',
+  requireAuth,
+  validate({ params: idParamSchema }),
+  itemsController.updateItemStatus
+);
+
+
 module.exports = router;
