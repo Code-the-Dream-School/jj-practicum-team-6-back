@@ -2,6 +2,8 @@ const { StatusCodes } = require('http-status-codes');
 const itemsService = require('../../services/items/items.service');
 const createItemSchema = require('../../validators/items/createItem.schema');
 const querySchema = require('../../validators/items/query.schema');
+const updateStatusSchema = require('../../validators/items/updateStatus.schema');
+
 
 // GET /items
 async function getItems(req, res, next) {
@@ -140,6 +142,32 @@ async function deleteItem(req, res, next) {
   }
 }
 
+// PATCH /items/:id/status (owner-only)
+async function updateItemStatus(req, res, next) {
+  try {
+    const id = req.params.id;
+    const ownerId = req.user.id;
+    const { status, isResolved } = updateStatusSchema.parse(req.body);
+
+    const updated = await itemsService.updateItem(id, ownerId, { status, isResolved });
+    if (!updated) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Item not found' },
+        meta: { requestId: req.id },
+      });
+    }
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: updated,
+      meta: { requestId: req.id },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 module.exports = {
   getItems,
   getItemById,
@@ -147,4 +175,5 @@ module.exports = {
   getSelfItems,
   updateItem,   
   deleteItem, 
+  updateItemStatus,
 };
