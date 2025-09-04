@@ -16,9 +16,24 @@ async function getSelfItems(ownerId, pagination) {
   return itemsRepo.findByOwner(ownerId, pagination);
 }
 
+// Owner-only update
+async function updateItem(id, ownerId, data) {
+  if (data && data.status === 'RESOLVED' && data.isResolved === undefined) {
+    data.isResolved = true;
+  }
+  return itemsRepo.updateByOwner(id, ownerId, data);
+}
+
+// Owner-only delete
+async function deleteItem(id, ownerId) {
+  return itemsRepo.deleteByOwner(id, ownerId);
+}
+
 module.exports = {
   getItems,
   getItemById,
   createItem,
   getSelfItems,
+  updateItem,
+  deleteItem,
 };

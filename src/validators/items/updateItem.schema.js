@@ -6,7 +6,7 @@ const updateItemSchema = z.object({
   title: z.string().min(2).optional(),
   description: z.string().max(1000).nullable().optional(),
   status: StatusEnum.optional(),
-  categoryName: z.string().min(2).optional(), 
+  categoryName: z.string().min(2).optional(),
   zipCode: z.string().max(20).optional(),
   latitude: z.coerce.number().nullable().optional(),
   longitude: z.coerce.number().nullable().optional(),
