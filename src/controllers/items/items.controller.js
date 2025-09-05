@@ -1,26 +1,29 @@
 const { StatusCodes } = require('http-status-codes');
 const itemsService = require('../../services/items/items.service');
 const createItemSchema = require('../../validators/items/createItem.schema');
-const querySchema = require('../../validators/items/query.schema');
 const updateStatusSchema = require('../../validators/items/updateStatus.schema');
-
 
 // GET /items
 async function getItems(req, res, next) {
   try {
-    const parsed = querySchema.parse(req.query);
+    // read validated pagination/sort from middleware
+    const q = req.validatedQuery || {};
     const { items, total } = await itemsService.getItems(
       {
-        status: parsed.status,
-        category: parsed.category,
-        isResolved: parsed.is_resolved,
+        sortBy: q.sortBy,
+        sortOrder: q.sortOrder,
       },
-      { page: parsed.page, limit: parsed.limit }
+      { page: q.page, limit: q.limit, offset: q.offset }
     );
+
     return res.json({
       success: true,
       data: items,
-      meta: { total, page: parsed.page, limit: parsed.limit },
+      meta: {
+        total,
+        page: q.page,
+        limit: q.limit,
+      },
     });
   } catch (err) {
     next(err);
@@ -30,7 +33,8 @@ async function getItems(req, res, next) {
 // GET /items/:id
 async function getItemById(req, res, next) {
   try {
-    const item = await itemsService.getItemById(req.params.id);
+    const id = (req.validatedParams && req.validatedParams.id) || req.params.id;
+    const item = await itemsService.getItemById(id);
     if (!item) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -80,15 +84,21 @@ async function getSelfItems(req, res, next) {
       });
     }
 
-    const parsed = querySchema.parse(req.query);
+    const q = req.validatedQuery || {};
     const { items, total } = await itemsService.getSelfItems(userId, {
-      page: parsed.page,
-      limit: parsed.limit,
+      page: q.page,
+      limit: q.limit,
+      offset: q.offset,
     });
+
     return res.json({
       success: true,
       data: items,
-      meta: { total, page: parsed.page, limit: parsed.limit },
+      meta: {
+        total,
+        page: q.page,
+        limit: q.limit,
+      },
     });
   } catch (err) {
     next(err);
@@ -167,13 +177,12 @@ async function updateItemStatus(req, res, next) {
   }
 }
 
-
 module.exports = {
   getItems,
   getItemById,
   createItem,
   getSelfItems,
-  updateItem,   
-  deleteItem, 
+  updateItem,
+  deleteItem,
   updateItemStatus,
 };

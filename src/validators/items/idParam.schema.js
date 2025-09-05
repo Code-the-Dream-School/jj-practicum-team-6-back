@@ -1,5 +1,8 @@
+
 const { z } = require('zod');
 
-module.exports = z.object({
-  id: z.string().uuid('Invalid id'),
+const idParamSchema = z.object({
+  id: z.string().uuid({ message: 'id must be a valid UUID' }),
 });
+
+module.exports = idParamSchema;
