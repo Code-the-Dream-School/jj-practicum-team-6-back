@@ -2,12 +2,31 @@ const { ZodError } = require('zod');
 
 module.exports = (err, req, res, next) => {
   if (res.headersSent) return next(err);
+
+  // Zod validation -> 422 with consistent shape
   if (err instanceof ZodError) {
-    return res.status(400).json({
+    const details = err.issues.map((issue) => {
+      const src = err._source ? `${err._source}.` : ''; // e.g. "query." | "params." | "body."
+      const path =
+        issue.path && issue.path.length
+          ? src + issue.path.join('.')
+          : err._source || undefined;
+
+      return {
+        path,                     
+        code: issue.code,         
+        message: issue.message,   
+        expected: issue.expected, 
+        received: issue.received, 
+      };
+    });
+
+    return res.status(422).json({
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
-        message: JSON.stringify(err.issues, null, 2),
+        message: 'Request validation failed',
+        details,
       },
       meta: { requestId: req.id },
     });
