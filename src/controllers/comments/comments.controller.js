@@ -1,12 +1,14 @@
 const xss = require('xss');
 const { createItemCommentSchema } = require('../../validators/comments/createItemComment.validator');
 const {
-    ensureItemExists,
-    createItemComment,
-    listItemComments,
-  } = require('../../services/comments/comments.service');
+  ensureItemExists,
+  createItemComment,
+  listItemComments,
+  getCommentWithItem,
+  deleteCommentById,
+} = require('../../services/comments/comments.service');
 
-
+// POST /items/:id/comments
 async function postItemComment(req, res, next) {
   try {
     const itemId = req.params.id;
@@ -20,7 +22,6 @@ async function postItemComment(req, res, next) {
       });
     }
 
-  
     const { body } = createItemCommentSchema.parse(req.body);
 
     const authorId = req.user?.id;
@@ -31,7 +32,7 @@ async function postItemComment(req, res, next) {
       });
     }
 
-   
+    // XSS sanitize
     const sanitized = xss(body);
 
     const comment = await createItemComment({ itemId, authorId, body: sanitized });
@@ -42,20 +43,22 @@ async function postItemComment(req, res, next) {
   }
 }
 
-async function getItemComments(req, res, next) {
-    try {
-      const itemId = req.params.id;
-  
-      // 404 
-      const exists = await ensureItemExists(itemId);
-      if (!exists) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'RESOURCE_NOT_FOUND', message: 'Item not found' },
-        });
-      }
+//GET /items/:id/comments
 
-      const limit = Number(req.query.limit ?? 10);
+async function getItemComments(req, res, next) {
+  try {
+    const itemId = req.params.id;
+
+    // 404 
+    const exists = await ensureItemExists(itemId);
+    if (!exists) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Item not found' },
+      });
+    }
+
+    const limit = Number(req.query.limit ?? 10);
     const offset = Number(req.query.offset ?? 0);
 
     const { comments, count } = await listItemComments({ itemId, limit, offset });
@@ -70,4 +73,43 @@ async function getItemComments(req, res, next) {
   }
 }
 
-module.exports = { postItemComment, getItemComments};
+// DELETE /comments/:id
+
+async function deleteComment(req, res, next) {
+  try {
+    const commentId = req.params.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Login required' },
+      });
+    }
+
+    const comment = await getCommentWithItem(commentId);
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Comment not found' },
+      });
+    }
+
+    const isAuthor = comment.authorId === userId;
+    const isItemOwner = comment.item?.ownerId === userId;
+
+    if (!isAuthor && !isItemOwner) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not allowed to delete this comment' },
+      });
+    }
+
+    await deleteCommentById(commentId);
+    return res.status(204).send(); 
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { postItemComment, getItemComments, deleteComment };

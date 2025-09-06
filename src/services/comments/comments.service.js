@@ -31,4 +31,23 @@ async function listItemComments({ itemId, limit, offset }) {
     return { comments, count };
   }
 
-module.exports = { ensureItemExists, createItemComment, listItemComments };
+  async function getCommentWithItem(commentId) {
+    return prisma.itemComment.findUnique({
+      where: { id: commentId },
+      include: {
+        item: { select: { ownerId: true } },
+      },
+    });
+  }
+  
+  async function deleteCommentById(commentId) {
+    return prisma.itemComment.delete({ where: { id: commentId } });
+  }
+
+  module.exports = {
+    ensureItemExists,
+    createItemComment,
+    listItemComments,
+    getCommentWithItem,
+    deleteCommentById,
+  };
