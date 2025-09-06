@@ -2,12 +2,15 @@ const express = require('express');
 const router = express.Router();
 
 const itemsController = require('../../controllers/items/items.controller');
+const commentsController = require('../../controllers/comments/comments.controller');
+
 const validate = require('../../middleware/validate');
 const { requireAuth } = require('../../middleware/auth');
 
 const updateItemSchema = require('../../validators/items/updateItem.schema');
 const idParamSchema = require('../../validators/items/idParam.schema');
 const { paginationSchema } = require('../../validators/shared/pagination.schema');
+const { createItemCommentSchema } = require('../../validators/comments/createItemComment.validator');
 
 // GET /items  — list with pagination/sort
 router.get(
@@ -56,6 +59,13 @@ router.patch(
   requireAuth,
   validate({ params: idParamSchema }),
   itemsController.updateItemStatus
+);
+
+router.post(
+  '/:id/comments',
+  requireAuth,
+  validate({ params: idParamSchema, body: createItemCommentSchema }),
+  commentsController.postItemComment
 );
 
 module.exports = router;
