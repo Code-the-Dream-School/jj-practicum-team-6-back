@@ -14,4 +14,21 @@ async function createItemComment({ itemId, authorId, body }) {
   });
 }
 
-module.exports = { ensureItemExists, createItemComment };
+async function listItemComments({ itemId, limit, offset }) {
+    const [count, comments] = await prisma.$transaction([
+      prisma.itemComment.count({ where: { itemId } }),
+      prisma.itemComment.findMany({
+        where: { itemId },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+        include: {
+          author: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        },
+      }),
+    ]);
+  
+    return { comments, count };
+  }
+
+module.exports = { ensureItemExists, createItemComment, listItemComments };
