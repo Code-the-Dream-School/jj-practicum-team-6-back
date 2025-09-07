@@ -58,4 +58,19 @@ router.patch(
   itemsController.updateItemStatus
 );
 
+// POST /items/:id/photos  (attach photos)
+router.post(
+  '/:id/photos',
+  requireAuth,
+  validate({ params: idParamSchema }),
+  itemsController.addItemPhotos
+);
+
+// DELETE /items/:id/photos/:photoId  (remove photo)
+router.delete(
+  '/:id/photos/:photoId',
+  requireAuth,
+  itemsController.deleteItemPhoto
+);
+
 module.exports = router;
