@@ -9,7 +9,7 @@ const { requireAuth } = require('../../middleware/auth');
 const updateItemSchema = require('../../validators/items/updateItem.schema');
 const idParamSchema = require('../../validators/items/idParam.schema');
 const { paginationSchema } = require('../../validators/shared/pagination.schema');
-const { seenMarkSchema } = require('../../validators/seen/seenMark.validator');
+const { seenMarkSchema, seenIdParamSchema } = require('../../validators/seen/seenMark.validator');
 
 // GET /items  — list with pagination/sort
 router.get(
@@ -66,6 +66,22 @@ router.post(
   requireAuth,
   validate({ params: idParamSchema, body: seenMarkSchema }),
   seenController.postSeenMark
+);
+
+// GET /items/:id/seen
+router.get(
+  '/:id/seen',
+  requireAuth,
+  validate({ params: idParamSchema }),
+  seenController.getSeenMarks
+);
+
+// GET /items/:id/seen/:seenMarkId
+router.get(
+  '/:itemId/seen/:seenMarkId',
+  requireAuth,
+  validate({ params: seenIdParamSchema }),
+  seenController.getSeenMarkById
 );
 
 module.exports = router;

@@ -1,3 +1,4 @@
+// src/services/seen/seen.service.js
 const { prisma } = require('../../utils/prisma');
 
 async function ensureItemExists(itemId) {
@@ -14,4 +15,31 @@ async function createSeenMark({ itemId, userId }) {
   });
 }
 
-module.exports = { ensureItemExists, createSeenMark };
+// returns all users who marked the item as seen, sorted by newest first
+async function listSeenMarks(itemId) {
+  return prisma.seenMark.findMany({
+    where: { itemId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+    },
+  });
+}
+
+// retrieves a seen mark along with the item's owner ID for permission checks
+async function getSeenMarkForItem(markId) {
+  return prisma.seenMark.findUnique({
+    where: { id: markId },
+    include: {
+      item: { select: { id: true, ownerId: true } },
+      user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+    },
+  });
+}
+
+module.exports = {
+  ensureItemExists,
+  createSeenMark,
+  listSeenMarks,
+  getSeenMarkForItem
+};

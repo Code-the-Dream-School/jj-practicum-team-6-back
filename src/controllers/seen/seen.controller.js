@@ -1,10 +1,12 @@
+// src/controllers/seen/seen.controller
 const {prisma} = require('../../utils/prisma');
 const xss = require('xss');
 const {seenMarkSchema} = require('../../validators/seen/seenMark.validator');
 const {
   ensureItemExists,
   createSeenMark,
-  getSeenMarks
+  listSeenMarks,
+  getSeenMarkForItem
 } = require('../../services/seen/seen.service');
 
 // POST /items/:id/seen
@@ -39,4 +41,40 @@ async function postSeenMark(req, res, next) {
   }
 }
 
-module.exports = {postSeenMark, getSeenMarks };
+// GET /items/:id/seen
+async function getSeenMarks(req, res, next) {
+  try {
+    const itemId = req.params.id;
+    const exists = await ensureItemExists(itemId);
+    if (!exists) return res.status(404).json({
+      success: false,
+      error: {code: 'RESOURCE_NOT_FOUND', message: 'Item not found'}
+    });
+
+    const marks = await listSeenMarks(itemId);
+    return res.status(200).json({success: true, data: marks});
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /items/:itemId/seen/:seenMarkId
+async function getSeenMarkById(req, res, next) {
+  try {
+    const { itemId, seenMarkId } = req.params;
+
+    const mark = await getSeenMarkForItem(seenMarkId);
+    if (!mark || mark.item?.id !== itemId) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Seen mark not found for this item' },
+      });
+    }
+
+    return res.status(200).json({ success: true, data: mark });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {postSeenMark, getSeenMarks, getSeenMarkById };
