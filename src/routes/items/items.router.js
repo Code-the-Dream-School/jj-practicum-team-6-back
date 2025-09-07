@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 
 const itemsController = require('../../controllers/items/items.controller');
+const seenController = require('../../controllers/seen/seen.controller');
 const validate = require('../../middleware/validate');
 const { requireAuth } = require('../../middleware/auth');
 
 const updateItemSchema = require('../../validators/items/updateItem.schema');
 const idParamSchema = require('../../validators/items/idParam.schema');
 const { paginationSchema } = require('../../validators/shared/pagination.schema');
+const { seenMarkSchema } = require('../../validators/seen/seenMark.validator');
 
 // GET /items  — list with pagination/sort
 router.get(
@@ -56,6 +58,14 @@ router.patch(
   requireAuth,
   validate({ params: idParamSchema }),
   itemsController.updateItemStatus
+);
+
+// POST /items/:id/seen
+router.post(
+  '/:id/seen',
+  requireAuth,
+  validate({ params: idParamSchema, body: seenMarkSchema }),
+  seenController.postSeenMark
 );
 
 module.exports = router;
