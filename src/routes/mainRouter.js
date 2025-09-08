@@ -1,11 +1,12 @@
-// src/routes/mainRouter.js
 const express = require('express');
 const router = express.Router();
 const mainController = require('../controllers/mainController.js');
 const { prisma } = require('../utils/prisma');
+
 const authRouter = require('./auth/auth.router');
-const categoriesRouter = require('../routes/categories/categories.router.js');
-const itemsRouter = require('./items/items.router');
+const categoriesRouter = require('./categories/categories.router.js');
+const itemsRouter = require('./items/items.router.js');
+const commentsRouter = require('./comments/comments.router');
 
 // Root
 router.get('/', mainController.get);
@@ -21,12 +22,10 @@ router.get('/healthz/db', async (_req, res) => {
   }
 });
 
-// Auth module (mounted under /api/v1 by app.js)
+// Modules
 router.use('/auth', authRouter);
-
-// categories module: /api/v1/categories
 router.use('/categories', categoriesRouter);
-
 router.use('/items', itemsRouter);
+router.use('/comments', commentsRouter);
 
 module.exports = router;
