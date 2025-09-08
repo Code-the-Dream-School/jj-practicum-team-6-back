@@ -7,39 +7,1695 @@
 	},
 	"item": [
 		{
-			"name": "Healthz",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/healthz",
-					"host": [
-						"{{base_url}}"
+			"name": "DB health check",
+			"item": [
+				{
+					"name": "Healthz DB",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Check status code\r",
+									"pm.test(\"DB health endpoint is reachable\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"DB is connected\", function () {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.data.db).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"DB health response time < 500ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Health check success flag is true\", () => {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
 					],
-					"path": [
-						"healthz"
-					]
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/healthz/db",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz",
+								"db"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Healthz",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Check status code\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Check success flag\r",
+									"pm.test(\"Response has success=true\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"// Check status inside data\r",
+									"pm.test(\"App status is OK\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.data.status).to.eql(\"ok\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is under 300ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(300);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/healthz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "Healthz DB",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/healthz/db",
-					"host": [
-						"{{base_url}}"
+			"name": "Auth",
+			"item": [
+				{
+					"name": "POST - Register user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"if (jsonData.success && jsonData.data) {\r",
+									"    const user = jsonData.data.user;\r",
+									"    const token = jsonData.data.accessToken;\r",
+									"\r",
+									"    // Save user info to environment variables\r",
+									"    pm.environment.set(\"userId\", user.id || \"\");\r",
+									"    pm.environment.set(\"email\", user.email || \"\");\r",
+									"    pm.environment.set(\"firstName\", user.firstName || \"\");\r",
+									"    pm.environment.set(\"lastName\", user.lastName || \"\");\r",
+									"    pm.environment.set(\"zipCode\", user.zipCode || \"\");\r",
+									"    pm.environment.set(\"phoneNumber\", user.phoneNumber || \"\");\r",
+									"    pm.environment.set(\"avatarUrl\", user.avatarUrl || \"\");\r",
+									"\r",
+									"    // Save JWT if returned\r",
+									"    if (token) {\r",
+									"        pm.environment.set(\"token\", token);\r",
+									"    }\r",
+									"\r",
+									"    // Tests\r",
+									"    pm.test(\"Email matches input\", () => {\r",
+									"        const expectedEmail = pm.environment.get(\"generatedEmail\");\r",
+									"        pm.expect(user.email).to.eql(expectedEmail);\r",
+									"    });\r",
+									"\r",
+									"\r",
+									"    pm.test(\"First and last name are correct\", () => {\r",
+									"        pm.expect(user.firstName).to.eql(\"User\");\r",
+									"        pm.expect(user.lastName).to.eql(\"Test\");\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Zip code and phone number are correct\", () => {\r",
+									"        pm.expect(user.zipCode).to.eql(\"95050\");\r",
+									"        pm.expect(user.phoneNumber).to.eql(\"1234567890\");\r",
+									"    });\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Response time is under 500ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const randomInt = Math.floor(Math.random() * 1000);\r",
+									"const email = `user${randomInt}@example.com`;\r",
+									"\r",
+									"pm.environment.set(\"generatedEmail\", email);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
 					],
-					"path": [
-						"healthz",
-						"db"
-					]
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{generatedEmail}}\",\r\n  \"password\": \"p@ssword#135\",\r\n  \"confirmPassword\": \"p@ssword#135\",\r\n  \"firstName\": \"User\",\r\n  \"lastName\": \"Test\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Duplicate email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 409 and EMAIL_TAKEN error\", function () {\r",
+									"  pm.response.to.have.status(409);\r",
+									"  const res = pm.response.json();\r",
+									"\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.error).to.be.an(\"object\");\r",
+									"  pm.expect(res.error.code).to.eql(\"EMAIL_TAKEN\");\r",
+									"  pm.expect(res.error.message).to.include(\"Email is already in use\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"bob3@example.com\",\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"confirmPassword\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"Bob\",\r\n  \"lastName\": \"Adams\",\r\n  \"zipCode\": \"53202\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Missing email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 and validation error for missing email\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"  pm.expect(res.error.details).to.be.an(\"array\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"confirmPassword\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"Test\",\r\n  \"lastName\": \"User\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Invalid email format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for invalid email format\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"email\"))).to.be.true;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"user.example.com\",\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"confirmPassword\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"Test\",\r\n  \"lastName\": \"User\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Password mismatch",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for mismatched passwords\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.message.includes(\"Passwords do not match\"))).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"user@example.com\",\r\n  \"password\": \"p@ssw0rD#123\",\r\n  \"confirmPassword\": \"p@ssworD#123\",\r\n  \"firstName\": \"Test\",\r\n  \"lastName\": \"User\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Missing password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for missing password\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"password\"))).to.be.true;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"user@example.com\",\r\n  \"confirmPassword\": \"p@ssworD#123\",\r\n  \"firstName\": \"Test\",\r\n  \"lastName\": \"User\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Register user - Missing confirmPassword",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for missing confirmPassword\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"confirmPassword\"))).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"user@example.com\",\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"Test\",\r\n  \"lastName\": \"User\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200/201\", function () {\r",
+									"  pm.expect(pm.response.code).to.be.oneOf([200, 201]);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let json = {};\r",
+									"try { json = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"const token =\r",
+									"  json?.data?.accessToken ||\r",
+									"  json?.accessToken ||\r",
+									"  json?.data?.token ||\r",
+									"  json?.token;\r",
+									"\r",
+									"if (token) {\r",
+									"  pm.environment.set(\"token\", token);\r",
+									"}\r",
+									"\r",
+									"const userId = json?.data?.user?.id;\r",
+									"if (userId) {\r",
+									"  pm.environment.set(\"userId\", userId);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{email}}\", // owner\r\n  \"password\": \"p@ssword#135\" // replace with actual password\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Login - Nonexistent email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 401 and INVALID_CREDENTIALS error\", function () {\r",
+									"  pm.response.to.have.status(401);\r",
+									"  const res = pm.response.json();\r",
+									"\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.error).to.be.an(\"object\");\r",
+									"  pm.expect(res.error.code).to.eql(\"INVALID_CREDENTIALS\");\r",
+									"  pm.expect(res.error.message).to.include(\"Invalid email or password\");\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"nouser@example.com\",\r\n  \"password\": \"p@ssw0rD#137\" \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG POST - Login - Missing email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for missing email\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"email\"))).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"password\": \"p@ssw0rD#137\" \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG POST - Login - Missing password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for missing password\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"password\"))).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{email}}\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG POST - Login - Invalid email format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for invalid email format\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.details.some(d => d.path.includes(\"email\"))).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"test.user.gmail.com\",\r\n  \"password\": \"p@ssw0rD#137\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG POST - Wrong credentials",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 401 for wrong credentials\", function () {\r",
+									"  pm.response.to.have.status(401);\r",
+									"  const res = pm.response.json();\r",
+									"  \r",
+									"  pm.expect(res.error.code).to.eql(\"INVALID_CREDENTIALS\");\r",
+									"  pm.expect(res.error.message).to.include(\"Invalid\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"test.user@example.com\",\r\n  \"password\": \"p@ssworD#321\" \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG POST - Login - Empty payload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for empty payload\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"if (jsonData.success) {\r",
+									"    const user = jsonData.data.user;\r",
+									"\r",
+									"    // Save user info to environment variables\r",
+									"    pm.environment.set(\"userId\", user.id || \"\");\r",
+									"    pm.environment.set(\"email\", user.email || \"\");\r",
+									"    pm.environment.set(\"firstName\", user.firstName || \"\");\r",
+									"    pm.environment.set(\"lastName\", user.lastName || \"\");\r",
+									"    pm.environment.set(\"zipCode\", user.zipCode || \"\");\r",
+									"    pm.environment.set(\"phoneNumber\", user.phoneNumber || \"\");\r",
+									"    pm.environment.set(\"avatarUrl\", user.avatarUrl || \"\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Get user - No Authorization header",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 401 for missing Authorization header\", function () {\r",
+									"  pm.response.to.have.status(401);\r",
+									"  const res = pm.response.json();\r",
+									"\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"  pm.expect(res.error.message).to.include(\"Missing Authorization header\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Get user - Invalid token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 401 for invalid token\", function () {\r",
+									"  pm.response.to.have.status(401);\r",
+									"  const res = pm.response.json();\r",
+									"\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"  pm.expect(res.error.message).to.include(\"Invalid token\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMDZkMmNhZC04Yzg5LTQ2YzMtYjUyZS1kYzNjOWIxNGY5Y2UiLCJpYXQiOjE3NTcwNDk2NTMsImV4cCI6MTc1NzEzNjA1M30.upzYM6fIBdjKumVKKPATJzl_ocFPbquE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Get user - Token expired (after 24 h)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.environment.get(\"run_expired_token_test\") === \"true\") {\r",
+									"  pm.test(\"Should fail with 401 for expired token\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"    const res = pm.response.json();\r",
+									"\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"    pm.expect(res.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"    pm.expect(res.error.message).to.include(\"Token expired\");\r",
+									"  });\r",
+									"} else {\r",
+									"  console.warn(\"Skipping expired token test — token still valid\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "GET - All categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"const list =\r",
+									"  Array.isArray(j.data) ? j.data :\r",
+									"  (Array.isArray(j?.data?.items) ? j.data.items : []);\r",
+									"\r",
+									"const firstId = list?.[0]?.name;\r",
+									"if (firstId) pm.environment.set(\"categoryName\", firstId);\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get One category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Get One category - Nonexistent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for nonexistent category ID\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.eql(\"Not found\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"nocategoryName"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is between 200 and 2301\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.within(200, 201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(j.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Category name matches expected\", () => {\r",
+									"    pm.expect(j.data.name).to.eql(\"Test Category\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Test Category\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Create category - EMPTY name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for empty category name\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"Category name cannot be empty\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Create category with exist name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 409 for duplicate category name\", function () {\r",
+									"  pm.response.to.have.status(409);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"already exists\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Clothing\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(j.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Test category update\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Update category - nonexistent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for updating nonexistent category\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"Not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"UpdatedName\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"nocategoryName"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Message confirms deletion\", () => {\r",
+									"    pm.expect(jsonData.message).to.include(\"Category deleted\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is under 500ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category - Not Found (after delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for deleting nonexistent category\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.eql(\"Not found\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Items 1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }
