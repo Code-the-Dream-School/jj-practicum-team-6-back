@@ -6,7 +6,8 @@ const { prisma } = require('../utils/prisma');
 const authRouter = require('./auth/auth.router');
 const categoriesRouter = require('./categories/categories.router.js');
 const itemsRouter = require('./items/items.router.js');
-const commentsRouter = require('./comments/comments.router');
+const uploadsRouter = require('./uploads/uploads.router.js');
+const commentsRouter = require('./comments/comments.router.js');
 
 // Root
 router.get('/', mainController.get);
@@ -25,7 +26,17 @@ router.get('/healthz/db', async (_req, res) => {
 // Modules
 router.use('/auth', authRouter);
 router.use('/categories', categoriesRouter);
+
+// Items module: /api/v1/items
 router.use('/items', itemsRouter);
+
+// Comments module: /api/v1/comments
 router.use('/comments', commentsRouter);
+
+// Uploads module: /api/v1/uploads
+router.use('/uploads', uploadsRouter);
+
+module.exports = router;
+
 
 module.exports = router;
