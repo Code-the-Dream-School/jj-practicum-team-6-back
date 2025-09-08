@@ -16,14 +16,21 @@ async function createSeenMark({ itemId, userId }) {
 }
 
 // returns all users who marked the item as seen, sorted by newest first
-async function listSeenMarks(itemId) {
-  return prisma.seenMark.findMany({
-    where: { itemId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
-    },
-  });
+async function listSeenMarks(itemId, { limit, offset, sortBy, sortOrder }) {
+  const [marks, count] = await Promise.all([
+    prisma.seenMark.findMany({
+      where: { itemId },
+      skip: offset,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+      },
+    }),
+    prisma.seenMark.count({ where: { itemId } }),
+  ]);
+
+  return { marks, count };
 }
 
 // retrieves a seen mark along with the item's owner ID for permission checks

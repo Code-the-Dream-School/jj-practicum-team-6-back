@@ -1,7 +1,5 @@
 // src/controllers/seen/seen.controller
 const {prisma} = require('../../utils/prisma');
-const xss = require('xss');
-const {seenMarkSchema} = require('../../validators/seen/seenMark.validator');
 const {
   ensureItemExists,
   createSeenMark,
@@ -42,14 +40,37 @@ async function postSeenMark(req, res, next) {
 async function getSeenMarks(req, res, next) {
   try {
     const itemId = req.params.id;
+
+    const limit = Number(req.query.limit ?? 20);
+    const page = Number(req.query.page ?? 1);
+    const offset = Number(req.query.offset ?? (page - 1) * limit);
+    const sortBy = req.query.sortBy ?? 'createdAt';
+    const sortOrder = req.query.sortOrder ?? 'desc';
+
     const exists = await ensureItemExists(itemId);
     if (!exists) return res.status(404).json({
       success: false,
       error: {code: 'RESOURCE_NOT_FOUND', message: 'Item not found'}
     });
 
-    const marks = await listSeenMarks(itemId);
-    return res.status(200).json({success: true, data: marks});
+    // const { marks, count } = await listSeenMarks(itemId, { limit, offset, sortBy, sortOrder });
+    const { marks, count } = await listSeenMarks(itemId, {
+      limit: Number(limit),
+      offset: Number(offset),
+      sortBy,
+      sortOrder,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: marks,
+      meta: {
+        count,
+        limit,
+        offset,
+        hasMore: offset + marks.length < count
+      }
+    });
   } catch (err) {
     next(err);
   }

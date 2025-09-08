@@ -72,7 +72,7 @@ router.post(
 router.get(
   '/:id/seen',
   requireAuth,
-  validate({ params: idParamSchema }),
+  validate({ params: idParamSchema, query: paginationSchema }),
   seenController.getSeenMarks
 );
 
@@ -88,7 +88,7 @@ router.get(
 router.delete(
   '/:itemId/seen/:seenMarkId',
   requireAuth,
-  validate({ params: seenIdParamSchema }),
+  validate({ params: paginationSchema }),
   seenController.deleteSeenMark
 );
 
