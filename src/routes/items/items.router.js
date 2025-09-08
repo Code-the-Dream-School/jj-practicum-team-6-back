@@ -84,4 +84,12 @@ router.get(
   seenController.getSeenMarkById
 );
 
+// DELETE /items/:itemId/seen/:seenMarkId
+router.delete(
+  '/:itemId/seen/:seenMarkId',
+  requireAuth,
+  validate({ params: seenIdParamSchema }),
+  seenController.deleteSeenMark
+);
+
 module.exports = router;

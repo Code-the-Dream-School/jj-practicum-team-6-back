@@ -31,10 +31,7 @@ async function postSeenMark(req, res, next) {
       error: {code: 'DUPLICATE', message: 'Already marked as seen'}
     });
 
-    const {body} = seenMarkSchema.parse(req.body);
-    const sanitized = xss(body);
-
-    const mark = await createSeenMark({itemId, userId, body: sanitized});
+    const mark = await createSeenMark({itemId, userId});
     return res.status(201).json({success: true, data: mark});
   } catch (err) {
     next(err);
@@ -77,4 +74,50 @@ async function getSeenMarkById(req, res, next) {
   }
 }
 
-module.exports = {postSeenMark, getSeenMarks, getSeenMarkById };
+// DELETE /items/:itemId/seen/:seenMarkId
+async function deleteSeenMark(req, res, next) {
+  try {
+    const { itemId, seenMarkId } = req.params;
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) return res.status(401).json({
+      success: false,
+      error: {code: 'UNAUTHORIZED', message: 'Login required'}
+    });
+
+    const exists = await ensureItemExists(itemId);
+    if (!exists) return res.status(404).json({
+      success: false,
+      error: {code: 'RESOURCE_NOT_FOUND', message: 'Item not found'}
+    });
+
+    const mark = await getSeenMarkForItem(seenMarkId);
+    if (!mark || mark.item.id !== itemId) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Seen mark not found for this item' },
+      });
+    }
+
+    // only the user who created the mark, item owner, or admin can delete
+    if (mark.user.id !== currentUserId && mark.item.ownerId !== currentUserId) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not allowed to delete this seen mark' },
+      });
+    }
+
+    await prisma.seenMark.delete({ where: { id: seenMarkId } });
+    return res.status(200).json({ success: true, message: 'Seen mark deleted' });
+
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  postSeenMark,
+  getSeenMarks,
+  getSeenMarkById,
+  deleteSeenMark,
+};
