@@ -27,8 +27,14 @@ async function getCategoryById(req, res, next) {
 async function createCategory(req, res, next) {
   try {
     const categoryRes = await categoriesService.createCategory(req.body);
+    // Category name is empty or already exists
+    if (categoryRes.invalid) {
+      return res.status(400).json({
+        success: false,
+        message: categoryRes.message,
+      });
+    }
     if (categoryRes.error) {
-      // Category name is empty or already exists
       return res.status(categoryRes.status).json({
         success: false,
         message: categoryRes.message,
