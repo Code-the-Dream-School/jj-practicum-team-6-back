@@ -9,27 +9,27 @@ const { requireAuth } = require('../../middleware/auth');
 
 const updateItemSchema = require('../../validators/items/updateItem.schema');
 const idParamSchema = require('../../validators/items/idParam.schema');
-const { paginationSchema } = require('../../validators/shared/pagination.schema');
 const {
   createItemCommentSchema,
 } = require('../../validators/comments/createItemComment.validator');
+const querySchema = require('../../validators/items/query.schema'); // 👈 новый импорт
 
-// GET /items  — list with pagination/sort
-router.get('/', validate({ query: paginationSchema }), itemsController.getItems);
+// GET /items — list with filters, geo, pagination/sort
+router.get('/', validate({ query: querySchema }), itemsController.getItems);
 
 // GET /items/self (auth required) — list with pagination/sort
 router.get(
   '/self',
   requireAuth,
-  validate({ query: paginationSchema }),
+  validate({ query: querySchema }),
   itemsController.getSelfItems
 );
 
-// GET /items/:id/comments — list item comments (public)
+// GET /items/:id/comments — list item comments (protected)
 router.get(
   '/:id/comments',
   requireAuth,
-  validate({ params: idParamSchema, query: paginationSchema }),
+  validate({ params: idParamSchema, query: querySchema }),
   commentsController.getItemComments
 );
 
@@ -48,7 +48,12 @@ router.patch(
 );
 
 // DELETE /items/:id (owner-only)
-router.delete('/:id', requireAuth, validate({ params: idParamSchema }), itemsController.deleteItem);
+router.delete(
+  '/:id',
+  requireAuth,
+  validate({ params: idParamSchema }),
+  itemsController.deleteItem
+);
 
 // PATCH /items/:id/status
 router.patch(
@@ -58,7 +63,7 @@ router.patch(
   itemsController.updateItemStatus
 );
 
-// POST /items/:id/photos  (attach photos)
+// POST /items/:id/photos (attach photos)
 router.post(
   '/:id/photos',
   requireAuth,
@@ -66,7 +71,7 @@ router.post(
   itemsController.addItemPhotos
 );
 
-// DELETE /items/:id/photos/:photoId  (remove photo)
+// DELETE /items/:id/photos/:photoId (remove photo)
 router.delete(
   '/:id/photos/:photoId',
   requireAuth,
