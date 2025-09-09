@@ -2,6 +2,7 @@ const { StatusCodes } = require('http-status-codes');
 const itemsService = require('../../services/items/items.service');
 const createItemSchema = require('../../validators/items/createItem.schema');
 const updateStatusSchema = require('../../validators/items/updateStatus.schema');
+const MAX_PHOTOS_PER_ITEM = parseInt(process.env.MAX_PHOTOS_PER_ITEM || '6', 10);
 
 // GET /items
 async function getItems(req, res, next) {
@@ -177,6 +178,76 @@ async function updateItemStatus(req, res, next) {
   }
 }
 
+async function addItemPhotos(req, res, next) {
+  try {
+    const itemId = req.params.id;
+    const ownerId = req.user?.id;
+
+    if (!ownerId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+        meta: { requestId: req.id },
+      });
+    }
+
+    const photos = req.body?.photos;
+    if (!Array.isArray(photos) || photos.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'photos must be a non-empty array' },
+        meta: { requestId: req.id },
+      });
+    }
+    if (photos.length > MAX_PHOTOS_PER_ITEM) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: `Too many photos: max ${MAX_PHOTOS_PER_ITEM}` },
+        meta: { requestId: req.id },
+      });
+    }
+
+    const created = await itemsService.addItemPhotos(itemId, ownerId, photos);
+
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      data: created,
+      meta: { requestId: req.id },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteItemPhoto(req, res, next) {
+  try {
+    const itemId = req.params.id;
+    const photoId = req.params.photoId;
+    const ownerId = req.user?.id;
+
+    if (!ownerId) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+        meta: { requestId: req.id },
+      });
+    }
+
+    const ok = await itemsService.deleteItemPhoto(itemId, ownerId, photoId);
+    if (!ok) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        error: { code: 'RESOURCE_NOT_FOUND', message: 'Item or photo not found (or not owned)' },
+        meta: { requestId: req.id },
+      });
+    }
+
+    return res.status(StatusCodes.NO_CONTENT).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getItems,
   getItemById,
@@ -185,4 +256,6 @@ module.exports = {
   updateItem,
   deleteItem,
   updateItemStatus,
+  addItemPhotos,
+  deleteItemPhoto,
 };

@@ -24,8 +24,6 @@ node_modules/
 !.vscode/extensions.json
 .idea
 
-# Cloudinary temp/uploads (if any)
-uploads/
 
 # other
 .DS_Store

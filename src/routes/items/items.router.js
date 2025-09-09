@@ -2,21 +2,23 @@ const express = require('express');
 const router = express.Router();
 
 const itemsController = require('../../controllers/items/items.controller');
+const commentsController = require('../../controllers/comments/comments.controller');
 const seenController = require('../../controllers/seen/seen.controller');
+
 const validate = require('../../middleware/validate');
 const { requireAuth } = require('../../middleware/auth');
 
 const updateItemSchema = require('../../validators/items/updateItem.schema');
 const idParamSchema = require('../../validators/items/idParam.schema');
 const { paginationSchema } = require('../../validators/shared/pagination.schema');
+const {
+  createItemCommentSchema,
+} = require('../../validators/comments/createItemComment.validator');
 const { seenMarkSchema, seenIdParamSchema } = require('../../validators/seen/seenMark.validator');
 
+
 // GET /items  — list with pagination/sort
-router.get(
-  '/',
-  validate({ query: paginationSchema }),
-  itemsController.getItems
-);
+router.get('/', validate({ query: paginationSchema }), itemsController.getItems);
 
 // GET /items/self (auth required) — list with pagination/sort
 router.get(
@@ -26,12 +28,16 @@ router.get(
   itemsController.getSelfItems
 );
 
-// GET /items/:id — validate UUID
+// GET /items/:id/comments — list item comments (public)
 router.get(
-  '/:id',
-  validate({ params: idParamSchema }),
-  itemsController.getItemById
+  '/:id/comments',
+  requireAuth,
+  validate({ params: idParamSchema, query: paginationSchema }),
+  commentsController.getItemComments
 );
+
+// GET /items/:id — validate UUID
+router.get('/:id', validate({ params: idParamSchema }), itemsController.getItemById);
 
 // POST /items (auth required)
 router.post('/', requireAuth, itemsController.createItem);
@@ -45,12 +51,7 @@ router.patch(
 );
 
 // DELETE /items/:id (owner-only)
-router.delete(
-  '/:id',
-  requireAuth,
-  validate({ params: idParamSchema }),
-  itemsController.deleteItem
-);
+router.delete('/:id', requireAuth, validate({ params: idParamSchema }), itemsController.deleteItem);
 
 // PATCH /items/:id/status
 router.patch(
@@ -60,6 +61,27 @@ router.patch(
   itemsController.updateItemStatus
 );
 
+// POST /items/:id/photos  (attach photos)
+router.post(
+  '/:id/photos',
+  requireAuth,
+  validate({ params: idParamSchema }),
+  itemsController.addItemPhotos
+);
+
+// DELETE /items/:id/photos/:photoId  (remove photo)
+router.delete(
+  '/:id/photos/:photoId',
+  requireAuth,
+  itemsController.deleteItemPhoto
+);
+
+// POST /items/:id/comments (auth required)
+router.post(
+  '/:id/comments',
+  requireAuth,
+  validate({ params: idParamSchema, body: createItemCommentSchema }),
+  commentsController.postItemComment
 // POST /items/:id/seen
 router.post(
   '/:id/seen',

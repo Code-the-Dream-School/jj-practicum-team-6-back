@@ -1,4 +1,5 @@
 const itemsRepo = require('../../repositories/items/items.repository');
+const photosRepo = require('../../repositories/photos/photos.repository');
 
 async function getItems(filters, pagination) {
   return itemsRepo.findMany({ filters, pagination });
@@ -29,6 +30,27 @@ async function deleteItem(id, ownerId) {
   return itemsRepo.deleteByOwner(id, ownerId);
 }
 
+// Attach photos to item (owner-only)
+async function addItemPhotos(itemId, ownerId, photos) {
+  const item = await itemsRepo.findById(itemId);
+  const itemOwnerId = item?.ownerId ?? item?.userId;
+  if (!item || itemOwnerId !== ownerId) {
+    return null;
+  }
+
+  return photosRepo.addPhotos(itemId, photos);
+}
+
+// Delete photo (owner-only)
+async function deleteItemPhoto(itemId, ownerId, photoId) {
+  const item = await itemsRepo.findById(itemId);
+  const itemOwnerId = item?.ownerId ?? item?.userId;
+  if (!item || itemOwnerId !== ownerId) return false;
+
+  return photosRepo.deletePhoto(itemId, photoId);
+}
+
+
 module.exports = {
   getItems,
   getItemById,
@@ -36,4 +58,6 @@ module.exports = {
   getSelfItems,
   updateItem,
   deleteItem,
+  addItemPhotos,
+  deleteItemPhoto,
 };
