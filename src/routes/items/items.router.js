@@ -16,6 +16,7 @@ const {
 const querySchema = require('../../validators/items/query.schema');
 
 const { seenMarkSchema, seenIdParamSchema } = require('../../validators/seen/seenMark.validator');
+const { paginationSchema } = require('../../validators/items/query.schema');
 
 
 // GET /items — list with filters, geo, pagination/sort
@@ -88,6 +89,8 @@ router.post(
   requireAuth,
   validate({ params: idParamSchema, body: createItemCommentSchema }),
   commentsController.postItemComment
+);
+
 // POST /items/:id/seen
 router.post(
   '/:id/seen',
@@ -95,6 +98,7 @@ router.post(
   validate({ params: idParamSchema, body: seenMarkSchema }),
   seenController.postSeenMark
 );
+
 
 // GET /items/:id/seen
 router.get(
