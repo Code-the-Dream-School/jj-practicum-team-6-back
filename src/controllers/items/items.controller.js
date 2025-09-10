@@ -7,10 +7,30 @@ const MAX_PHOTOS_PER_ITEM = parseInt(process.env.MAX_PHOTOS_PER_ITEM || '6', 10)
 // GET /items
 async function getItems(req, res, next) {
   try {
-    // read validated pagination/sort from middleware
     const q = req.validatedQuery || {};
+
+    // geo logic 
+    let geo = undefined;
+    if (q.lat != null && q.lng != null && q.radius != null) {
+      geo = { lat: Number(q.lat), lng: Number(q.lng), radius: Number(q.radius) };
+    } else if (q.zip && q.radius != null) {
+      geo = { zip: String(q.zip), radius: Number(q.radius) };
+    }
+
+    // exact zip filter (if zip given without radius) 
+    let zipCodeExact = undefined;
+    if (q.zip && q.radius == null) {
+      zipCodeExact = String(q.zip);
+    }
+
     const { items, total } = await itemsService.getItems(
       {
+        status: q.status,
+        category: q.category,
+        isResolved: q.is_resolved,
+        geo,
+        q: q.q,               
+        zipCodeExact,         
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
       },
@@ -24,6 +44,9 @@ async function getItems(req, res, next) {
         total,
         page: q.page,
         limit: q.limit,
+        geo,
+        zipCodeExact,
+        q: q.q,
       },
     });
   } catch (err) {

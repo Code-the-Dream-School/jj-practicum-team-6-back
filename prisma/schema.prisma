@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,70 +7,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* ---------- ENUMS ---------- */
-enum ItemStatus {
-  LOST     @map("lost")
-  FOUND    @map("found")
-  RESOLVED @map("resolved")
-}
-
-/* ---------- TABLES ---------- */
-
-/* users */
+/// users
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  email        String   @unique
-  password     String   // hashed
-  phoneNumber  String?  @map("phone_number")
-  zipCode      String   @map("zip_code")
-  avatarUrl    String?  @map("avatar_url")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt      @map("updated_at")
-
-  items                Item[]         @relation("UserItems")
-  comments             ItemComment[]  @relation("UserComments")
+  id                   String        @id @default(uuid()) @db.Uuid
+  firstName            String        @map("first_name")
+  lastName             String        @map("last_name")
+  email                String        @unique
+  password             String
+  phoneNumber          String?       @map("phone_number")
+  zipCode              String        @map("zip_code")
+  avatarUrl            String?       @map("avatar_url")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  comments             ItemComment[] @relation("UserComments")
+  items                Item[]        @relation("UserItems")
+  messages             Message[]     @relation("UserMessages")
   seenMarks            SeenMark[]
-  threadsAsOwner       Thread[]       @relation("OwnerThreads")
-  threadsAsParticipant Thread[]       @relation("ParticipantThreads")
-  messages             Message[]      @relation("UserMessages")
+  threadsAsOwner       Thread[]      @relation("OwnerThreads")
+  threadsAsParticipant Thread[]      @relation("ParticipantThreads")
 
   @@map("users")
 }
 
-/* categories (PK = category_name) */
+/// categories (PK = category_name)
 model Category {
   name      String   @id @unique @map("category_name")
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
-
+  updatedAt DateTime @updatedAt @map("updated_at")
   items     Item[]
 
   @@map("categories")
 }
 
-/* items */
+/// items
 model Item {
-  id           String     @id @default(uuid()) @db.Uuid
-  ownerId      String     @map("owner_id")     @db.Uuid
-  categoryName String     @map("category_name")
+  id           String        @id @default(uuid()) @db.Uuid
+  ownerId      String        @map("owner_id") @db.Uuid
+  categoryName String        @map("category_name")
   title        String
   description  String?
   status       ItemStatus
-  isResolved   Boolean    @default(false)      @map("is_resolved")
-  dateReported DateTime   @default(now())      @map("date_reported")
-  updatedAt    DateTime   @updatedAt           @map("updated_at")
-  zipCode      String     @map("zip_code")
+  isResolved   Boolean       @default(false) @map("is_resolved")
+  dateReported DateTime      @default(now()) @map("date_reported")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  zipCode      String        @map("zip_code")
   latitude     Float?
   longitude    Float?
-
-  owner     User     @relation("UserItems", fields: [ownerId], references: [id])
-  category  Category @relation(fields: [categoryName], references: [name])
-  photos    ItemPhoto[]
-  comments  ItemComment[]
-  seenMarks SeenMark[]
-  threads   Thread[]
+  comments     ItemComment[]
+  photos       ItemPhoto[]
+  category     Category      @relation(fields: [categoryName], references: [name])
+  owner        User          @relation("UserItems", fields: [ownerId], references: [id])
+  seenMarks    SeenMark[]
+  threads      Thread[]
 
   @@index([status, dateReported])
   @@index([categoryName])
@@ -84,44 +66,41 @@ model Item {
   @@map("items")
 }
 
-/* item_photos */
+/// item_photos
 model ItemPhoto {
   id        String   @id @default(uuid()) @db.Uuid
   itemId    String   @map("item_id") @db.Uuid
   url       String
   createdAt DateTime @default(now()) @map("created_at")
-
-  item Item @relation(fields: [itemId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
 
   @@index([itemId])
   @@map("item_photos")
 }
 
-/* item_comments */
+/// item_comments
 model ItemComment {
   id        String   @id @default(uuid()) @db.Uuid
-  itemId    String   @map("item_id")   @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
   authorId  String   @map("author_id") @db.Uuid
   body      String
   createdAt DateTime @default(now()) @map("created_at")
-
-  item   Item @relation(fields: [itemId], references: [id])
-  author User @relation("UserComments", fields: [authorId], references: [id])
+  author    User     @relation("UserComments", fields: [authorId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
 
   @@index([itemId])
   @@index([authorId])
   @@map("item_comments")
 }
 
-/* seen_marks */
+/// seen_marks
 model SeenMark {
   id        String   @id @default(uuid()) @db.Uuid
   itemId    String   @map("item_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
-
-  item Item @relation(fields: [itemId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([itemId, userId])
   @@index([itemId])
@@ -129,19 +108,18 @@ model SeenMark {
   @@map("seen_marks")
 }
 
-/* threads */
+/// threads
 model Thread {
-  id            String   @id @default(uuid()) @db.Uuid
-  itemId        String   @map("item_id")        @db.Uuid
-  ownerId       String   @map("owner_id")       @db.Uuid
-  participantId String   @map("participant_id") @db.Uuid
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt      @map("updated_at")
-
-  item        Item @relation(fields: [itemId], references: [id])
-  owner       User @relation("OwnerThreads",       fields: [ownerId],       references: [id])
-  participant User @relation("ParticipantThreads", fields: [participantId], references: [id])
-  messages    Message[]
+  id            String    @id @default(uuid()) @db.Uuid
+  itemId        String    @map("item_id") @db.Uuid
+  ownerId       String    @map("owner_id") @db.Uuid
+  participantId String    @map("participant_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  messages      Message[]
+  item          Item      @relation(fields: [itemId], references: [id])
+  owner         User      @relation("OwnerThreads", fields: [ownerId], references: [id])
+  participant   User      @relation("ParticipantThreads", fields: [participantId], references: [id])
 
   @@index([itemId])
   @@index([ownerId])
@@ -149,19 +127,25 @@ model Thread {
   @@map("threads")
 }
 
-/* messages */
+/// messages
 model Message {
-  id        String   @id @default(uuid()) @db.Uuid
-  threadId  String   @map("thread_id") @db.Uuid
-  senderId  String   @map("sender_id") @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  threadId  String    @map("thread_id") @db.Uuid
+  senderId  String    @map("sender_id") @db.Uuid
   body      String
-  createdAt DateTime @default(now()) @map("created_at")
-  readAt    DateTime?                @map("read_at")
-
-  thread Thread @relation(fields: [threadId], references: [id])
-  sender User   @relation("UserMessages", fields: [senderId], references: [id])
+  createdAt DateTime  @default(now()) @map("created_at")
+  readAt    DateTime? @map("read_at")
+  sender    User      @relation("UserMessages", fields: [senderId], references: [id])
+  thread    Thread    @relation(fields: [threadId], references: [id])
 
   @@index([threadId, createdAt])
   @@index([senderId])
   @@map("messages")
+}
+
+/// ---------- ENUMS ----------
+enum ItemStatus {
+  LOST     @map("lost")
+  FOUND    @map("found")
+  RESOLVED @map("resolved")
 }
