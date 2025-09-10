@@ -3,6 +3,7 @@ const router = express.Router();
 
 const itemsController = require('../../controllers/items/items.controller');
 const commentsController = require('../../controllers/comments/comments.controller');
+const seenController = require('../../controllers/seen/seen.controller');
 
 const validate = require('../../middleware/validate');
 const { requireAuth } = require('../../middleware/auth');
@@ -12,7 +13,10 @@ const idParamSchema = require('../../validators/items/idParam.schema');
 const {
   createItemCommentSchema,
 } = require('../../validators/comments/createItemComment.validator');
-const querySchema = require('../../validators/items/query.schema'); // 👈 новый импорт
+const querySchema = require('../../validators/items/query.schema');
+
+const { seenMarkSchema, seenIdParamSchema } = require('../../validators/seen/seenMark.validator');
+
 
 // GET /items — list with filters, geo, pagination/sort
 router.get('/', validate({ query: querySchema }), itemsController.getItems);
@@ -84,6 +88,36 @@ router.post(
   requireAuth,
   validate({ params: idParamSchema, body: createItemCommentSchema }),
   commentsController.postItemComment
+// POST /items/:id/seen
+router.post(
+  '/:id/seen',
+  requireAuth,
+  validate({ params: idParamSchema, body: seenMarkSchema }),
+  seenController.postSeenMark
+);
+
+// GET /items/:id/seen
+router.get(
+  '/:id/seen',
+  requireAuth,
+  validate({ params: idParamSchema, query: paginationSchema }),
+  seenController.getSeenMarks
+);
+
+// GET /items/:id/seen/:seenMarkId
+router.get(
+  '/:itemId/seen/:seenMarkId',
+  requireAuth,
+  validate({ params: seenIdParamSchema }),
+  seenController.getSeenMarkById
+);
+
+// DELETE /items/:itemId/seen/:seenMarkId
+router.delete(
+  '/:itemId/seen/:seenMarkId',
+  requireAuth,
+  validate({ params: paginationSchema }),
+  seenController.deleteSeenMark
 );
 
 module.exports = router;
