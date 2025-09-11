@@ -19,7 +19,6 @@ async function getOrCreateThread({ itemId, ownerId, participantId }) {
     });
     return { thread, created: true };
   } catch (err) {
-    // Handle unique violation (race condition)
     if (err.code === 'P2002') {
       const thread = await prisma.thread.findUnique({
         where: { itemId_participantId: { itemId, participantId } },
@@ -30,7 +29,7 @@ async function getOrCreateThread({ itemId, ownerId, participantId }) {
   }
 }
 
-// List threads for a user, optional filter by itemId
+// List threads for a user
 async function listThreadsForUser(userId, { itemId, page = 1, size = 20 }) {
   const skip = (page - 1) * size;
   const take = size;
