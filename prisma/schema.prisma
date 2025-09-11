@@ -17,6 +17,7 @@ model User {
   phoneNumber          String?       @map("phone_number")
   zipCode              String        @map("zip_code")
   avatarUrl            String?       @map("avatar_url")
+  avatarPublicId    String?       @map("avatar_public_id")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
   comments             ItemComment[] @relation("UserComments")
@@ -25,6 +26,7 @@ model User {
   seenMarks            SeenMark[]
   threadsAsOwner       Thread[]      @relation("OwnerThreads")
   threadsAsParticipant Thread[]      @relation("ParticipantThreads")
+  
 
   @@map("users")
 }

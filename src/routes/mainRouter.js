@@ -8,6 +8,7 @@ const categoriesRouter = require('./categories/categories.router.js');
 const itemsRouter = require('./items/items.router.js');
 const uploadsRouter = require('./uploads/uploads.router.js');
 const commentsRouter = require('./comments/comments.router.js');
+const usersRouter = require('./users/users.routes.js');
 
 // Root
 router.get('/', mainController.get);
@@ -35,6 +36,8 @@ router.use('/comments', commentsRouter);
 
 // Uploads module: /api/v1/uploads
 router.use('/uploads', uploadsRouter);
+
+router.use('/users', usersRouter);
 
 module.exports = router;
 
