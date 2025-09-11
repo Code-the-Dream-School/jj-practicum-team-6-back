@@ -9,6 +9,7 @@ const itemsRouter = require('./items/items.router.js');
 const uploadsRouter = require('./uploads/uploads.router.js');
 const commentsRouter = require('./comments/comments.router.js');
 const usersRouter = require('./users/users.routes.js');
+const threadsRouter = require('./threads/threads.router.js'); // ← new
 
 // Root
 router.get('/', mainController.get);
@@ -27,19 +28,10 @@ router.get('/healthz/db', async (_req, res) => {
 // Modules
 router.use('/auth', authRouter);
 router.use('/categories', categoriesRouter);
-
-// Items module: /api/v1/items
 router.use('/items', itemsRouter);
-
-// Comments module: /api/v1/comments
 router.use('/comments', commentsRouter);
-
-// Uploads module: /api/v1/uploads
 router.use('/uploads', uploadsRouter);
-
 router.use('/users', usersRouter);
-
-module.exports = router;
-
+router.use('/threads', threadsRouter); 
 
 module.exports = router;
