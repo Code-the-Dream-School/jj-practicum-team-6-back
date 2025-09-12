@@ -17,7 +17,7 @@ model User {
   phoneNumber          String?       @map("phone_number")
   zipCode              String        @map("zip_code")
   avatarUrl            String?       @map("avatar_url")
-  avatarPublicId    String?       @map("avatar_public_id")
+  avatarPublicId       String?       @map("avatar_public_id")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
   comments             ItemComment[] @relation("UserComments")
@@ -26,12 +26,11 @@ model User {
   seenMarks            SeenMark[]
   threadsAsOwner       Thread[]      @relation("OwnerThreads")
   threadsAsParticipant Thread[]      @relation("ParticipantThreads")
-  
 
   @@map("users")
 }
 
-/// categories (PK = category_name)
+/// categories
 model Category {
   name      String   @id @unique @map("category_name")
   createdAt DateTime @default(now()) @map("created_at")
@@ -65,6 +64,7 @@ model Item {
   @@index([status, dateReported])
   @@index([categoryName])
   @@index([ownerId])
+  @@index([zipCode])            // index by ZIP
   @@map("items")
 }
 
@@ -92,6 +92,7 @@ model ItemComment {
 
   @@index([itemId])
   @@index([authorId])
+  @@index([itemId, createdAt])  // index for recent comments
   @@map("item_comments")
 }
 
@@ -126,6 +127,7 @@ model Thread {
   @@index([itemId])
   @@index([ownerId])
   @@index([participantId])
+  @@unique([itemId, participantId])   // enforce 1:1 per item+participant
   @@map("threads")
 }
 
@@ -145,7 +147,7 @@ model Message {
   @@map("messages")
 }
 
-/// ---------- ENUMS ----------
+/// enums
 enum ItemStatus {
   LOST     @map("lost")
   FOUND    @map("found")
