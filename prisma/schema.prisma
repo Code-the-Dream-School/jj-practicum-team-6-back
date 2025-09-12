@@ -20,6 +20,7 @@ model User {
   avatarPublicId       String?       @map("avatar_public_id")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
+
   comments             ItemComment[] @relation("UserComments")
   items                Item[]        @relation("UserItems")
   messages             Message[]     @relation("UserMessages")
@@ -119,6 +120,13 @@ model Thread {
   participantId String    @map("participant_id") @db.Uuid
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // per-user "read up to" (MVP: двухсторонний диалог)
+  ownerLastReadMessageId       String?   @db.Uuid @map("owner_last_read_message_id")
+  ownerLastReadAt              DateTime? @map("owner_last_read_at")
+  participantLastReadMessageId String?   @db.Uuid @map("participant_last_read_message_id")
+  participantLastReadAt        DateTime? @map("participant_last_read_at")
+
   messages      Message[]
   item          Item      @relation(fields: [itemId], references: [id])
   owner         User      @relation("OwnerThreads", fields: [ownerId], references: [id])
@@ -127,22 +135,26 @@ model Thread {
   @@index([itemId])
   @@index([ownerId])
   @@index([participantId])
+  @@index([ownerLastReadMessageId])
+  @@index([participantLastReadMessageId])
   @@unique([itemId, participantId])   // enforce 1:1 per item+participant
   @@map("threads")
 }
 
 /// messages
 model Message {
-  id        String    @id @default(uuid()) @db.Uuid
-  threadId  String    @map("thread_id") @db.Uuid
-  senderId  String    @map("sender_id") @db.Uuid
-  body      String
-  createdAt DateTime  @default(now()) @map("created_at")
-  readAt    DateTime? @map("read_at")
-  sender    User      @relation("UserMessages", fields: [senderId], references: [id])
-  thread    Thread    @relation(fields: [threadId], references: [id])
+  id            String   @id @default(uuid()) @db.Uuid
+  threadId      String   @map("thread_id") @db.Uuid
+  senderId      String   @map("sender_id") @db.Uuid
+  body          String
+  attachmentUrl String?  @map("attachment_url")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  @@index([threadId, createdAt])
+  sender        User     @relation("UserMessages", fields: [senderId], references: [id])
+  thread        Thread   @relation(fields: [threadId], references: [id])
+
+  // Индексы под пагинацию «новые сверху»
+  @@index([threadId, createdAt(sort: Desc)])
   @@index([senderId])
   @@map("messages")
 }

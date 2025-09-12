@@ -5,6 +5,10 @@ const { requireAuth } = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
 const { postThread, getThreads } = require('../../controllers/threads/threads.controller');
 const { createThreadBodySchema, listThreadsQuerySchema } = require('../../validators/threads/threads.schema');
+const messagesRouter = require('../messages/messages.router');
+
+// Protect nested routes too
+router.use('/:threadId/messages', requireAuth, messagesRouter);
 
 // POST /api/v1/threads
 router.post(
