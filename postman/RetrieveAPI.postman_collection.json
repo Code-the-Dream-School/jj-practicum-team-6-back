@@ -1151,6 +1151,1255 @@
 			]
 		},
 		{
+			"name": "Items",
+			"item": [
+				{
+					"name": "GET – Items list",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"// Save first itemId",
+									"if (jsonData.data && jsonData.data.length > 0) {",
+									"    const first = jsonData.data[0];",
+									"",
+									"    pm.environment.set(\"itemId\", first.id);",
+									"    pm.test(\"Saved itemId\", function () {",
+									"        pm.expect(pm.environment.get(\"itemId\")).to.eql(first.id);",
+									"    });",
+									"",
+									"    // Save categoryName (check both keys)",
+									"    const category = first.categoryName || first.category?.name;",
+									"    if (category) {",
+									"        pm.environment.set(\"categoryName\", category);",
+									"        pm.test(\"Saved categoryName\", function () {",
+									"            pm.expect(pm.environment.get(\"categoryName\")).to.eql(category);",
+									"        });",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Response success is true\", function () {",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Data array is not empty\", function () {",
+									"    pm.expect(jsonData.data).to.be.an(\"array\");",
+									"    pm.expect(jsonData.data.length).to.be.above(0);",
+									"});",
+									"",
+									"pm.test(\"Each item has required fields\", () => {",
+									"  jsonData.data.forEach(item => {",
+									"    pm.expect(item).to.have.property(\"id\");",
+									"    pm.expect(item).to.have.property(\"title\");",
+									"    pm.expect(item).to.have.property(\"status\");",
+									"    pm.expect(item).to.have.property(\"dateReported\");",
+									"    pm.expect(item).to.have.property(\"owner\");",
+									"    pm.expect(item.owner).to.have.property(\"email\");",
+									"    pm.expect(item).to.have.property(\"category\");",
+									"    pm.expect(item.category).to.have.property(\"name\");",
+									"  });",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items?page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET – Items List with filters",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
+									"",
+									"const j = pm.response.json();",
+									"const first = j?.data?.[0];",
+									"if (first?.id) pm.environment.set(\"itemId\", first.id);",
+									"",
+									"const cat = first?.categoryName || first?.category?.name;",
+									"if (cat) pm.environment.set(\"categoryName\", cat);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items?page=1&limit=10&sortBy=dateReported&sortOrder=desc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "dateReported"
+								},
+								{
+									"key": "sortOrder",
+									"value": "desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET – Items List by category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
+									"",
+									"const res = pm.response.json();",
+									"",
+									"pm.test(\"Response has success = true\", () => {",
+									"  pm.expect(res.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Data is an array\", () => {",
+									"  pm.expect(res.data).to.be.an(\"array\");",
+									"});",
+									"",
+									"pm.test(\"All items belong to the requested category\", () => {",
+									"  if (res.data.length > 0) {",
+									"    res.data.forEach(item => {",
+									"      // match either top-level categoryName or nested category.name",
+									"      const cat = item.categoryName || (item.category && item.category.name);",
+									"      pm.expect(cat).to.eql(pm.environment.get(\"categoryName\"));",
+									"    });",
+									"  } else {",
+									"    console.log(\"No items found for this category\");",
+									"  }",
+									"});",
+									"",
+									"pm.test(\"Meta contains total, page, and limit\", () => {",
+									"  pm.expect(res.meta).to.have.property(\"total\");",
+									"  pm.expect(res.meta).to.have.property(\"page\");",
+									"  pm.expect(res.meta).to.have.property(\"limit\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items?category={{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "{{categoryName}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG GET – Items list - Zero limit",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with invalid page\", () => {",
+									"    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+									"});",
+									"",
+									"const res = pm.response.json();",
+									"pm.test(\"Response indicates failure\", () => {",
+									"    pm.expect(res.success).to.eql(false);",
+									"});",
+									"",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");",
+									"});",
+									"",
+									"pm.test(\"Validation message is correct\", () => {",
+									"    pm.expect(res.error.message).to.include(\"Request validation failed\");",
+									"});",
+									"",
+									"pm.test(\"Details show limit must be >=1\", () => {",
+									"    pm.expect(res.error.details[0].path).to.eql(\"query.limit\");",
+									"    pm.expect(res.error.details[0].code).to.eql(\"too_small\");",
+									"    pm.expect(res.error.details[0].message).to.include(\">=1\");",
+									"});",
+									"",
+									"pm.test(\"Response contains requestId\", () => {",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items?page=1&limit=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG GET – Items list - category does Not Exist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
+									"",
+									"const res = pm.response.json();",
+									"pm.test(\"Response indicates success\", () => {",
+									"    pm.expect(res.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Data array is empty when category does not exist\", () => {",
+									"    pm.expect(res.data).to.be.an(\"array\").that.is.empty;",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items?category=DoesNotExist&page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "DoesNotExist"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Created 201\", () => pm.expect(pm.response.code).to.eql(201));",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response success = true\", () => {",
+									"  pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Created item has an id\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.id).to.be.a(\"string\");",
+									"});",
+									"",
+									"if (jsonData?.success && jsonData.data) {",
+									"    if (jsonData.data.id) {",
+									"        pm.environment.set(\"itemId\", jsonData.data.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.categoryName) {",
+									"        pm.environment.set(\"categoryName\", jsonData.data.categoryName);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.id) {",
+									"        pm.environment.set(\"ownerId\", jsonData.data.owner.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.email) {",
+									"        pm.environment.set(\"ownerEmail\", jsonData.data.owner.email);",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Created item has required fields\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"title\");",
+									"  pm.expect(jsonData.data).to.have.property(\"description\");",
+									"  pm.expect(jsonData.data).to.have.property(\"status\");",
+									"  pm.expect(jsonData.data).to.have.property(\"categoryName\");",
+									"  pm.expect(jsonData.data).to.have.property(\"zipCode\");",
+									"  pm.expect(jsonData.data).to.have.property(\"dateReported\");",
+									"  pm.expect(jsonData.data).to.have.property(\"updatedAt\");",
+									"});",
+									"",
+									"pm.test(\"Category name matches request\", () => {",
+									"  pm.expect(jsonData.data.categoryName).to.eql(pm.environment.get(\"categoryName\"));",
+									"});",
+									"",
+									"pm.test(\"Owner info is present\", () => {",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"email\");",
+									"});",
+									"",
+									"pm.test(\"Meta contains requestId\", () => {",
+									"  pm.expect(jsonData.meta).to.have.property(\"requestId\");",
+									"  pm.expect(jsonData.meta.requestId).to.be.a(\"string\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Temp Item {{$randomInt}}\",\n  \"description\": \"for patch/delete tests\",\n  \"status\": \"LOST\",\n  \"categoryName\": \"{{categoryName}}\",\n  \"zipCode\": \"10001\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Create - invalid body - missing title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing fields\", () => {\r",
+									"    pm.expect(res.error.message).to.include(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Missing title validation\", () => {\r",
+									"    pm.expect(res.error.details[0].path).to.eql(\"title\");\r",
+									"    pm.expect(res.error.details[0].message).to.include(\"expected string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"description\": \"Missing title\",\r\n  \"status\": \"LOST\",\r\n  \"categoryName\": \"{{categoryName}}\",\r\n  \"zipCode\": \"10001\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Create - invalid body - missing category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing fields\", () => {\r",
+									"    pm.expect(res.error.message).to.include(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Missing category validation\", () => {\r",
+									"    pm.expect(res.error.details[0].path).to.eql(\"categoryName\");\r",
+									"    pm.expect(res.error.details[0].message).to.include(\"expected string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Temp Item {{$randomInt}}\",\r\n  \"description\": \"Missing category\",\r\n  \"status\": \"LOST\",\r\n  \"zipCode\": \"10001\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Create - invalid body - Invalid status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing fields\", () => {\r",
+									"    pm.expect(res.error.message).to.include(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Invalid status validation\", () => {\r",
+									"    let statusError = res.error.details.find(d => d.path === \"status\");\r",
+									"    pm.expect(statusError).to.exist;\r",
+									"    pm.expect(statusError.message).to.include(\"expected one of\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Temp Item {{$randomInt}}\",\r\n  \"description\": \"Invalid status\",\r\n  \"status\": \"INVALID_STATUS\",\r\n  \"categoryName\": \"{{categoryName}}\",\r\n  \"zipCode\": \"10001\"\r\n}\r\n\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Create Item - empty body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions invalid input\", () => {\r",
+									"    pm.expect(res.error.message).to.include(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Details mention expected object\", () => {\r",
+									"    pm.expect(res.error.details[0].expected).to.eql(\"object\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Create without token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 401 Unauthorized\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(401);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(res.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Temp Item {{$randomInt}}\",\r\n  \"description\": \"for patch/delete tests\",\r\n  \"status\": \"LOST\",\r\n  \"categoryName\": \"{{categoryName}}\",\r\n  \"zipCode\": \"10001\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET – Item by id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"// Parse response safely\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response success = true\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Item has correct id\", () => {\r",
+									"    pm.expect(jsonData.data.id).to.eql(pm.environment.get(\"itemId\"));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Item has required fields\", () => {\r",
+									"    pm.expect(jsonData.data).to.have.property(\"title\");\r",
+									"    pm.expect(jsonData.data).to.have.property(\"description\");\r",
+									"    pm.expect(jsonData.data).to.have.property(\"status\");\r",
+									"    pm.expect(jsonData.data).to.have.property(\"categoryName\");\r",
+									"    pm.expect(jsonData.data).to.have.property(\"zipCode\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG GET – Item by not valid id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Request validation failed'\", () => {\r",
+									"    pm.expect(res.error.message).to.eql(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Details show invalid UUID\", () => {\r",
+									"    pm.expect(res.error.details[0].path).to.eql(\"params.id\");\r",
+									"    pm.expect(res.error.details[0].code).to.eql(\"invalid_format\");\r",
+									"    pm.expect(res.error.details[0].message).to.eql(\"id must be a valid UUID\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/notItemId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"notItemId"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG GET – Item by id - Not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 404 Not Found\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(404);\r",
+									"});\r",
+									"\r",
+									"let res = {};\r",
+									"try { res = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is RESOURCE_NOT_FOUND\", () => {\r",
+									"    pm.expect(res.error.code).to.eql(\"RESOURCE_NOT_FOUND\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Item not found'\", () => {\r",
+									"    pm.expect(res.error.message).to.eql(\"Item not found\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(res.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(res.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/30e33e0d-e21c-4f6c-9219-6becdc822432",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"30e33e0d-e21c-4f6c-9219-6becdc822432"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update item (owner)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Title updated\", () => pm.expect(jsonData?.data?.title).to.eql(\"Updated Title\"));",
+									"pm.test(\"Status is RESOLVED\", () => pm.expect(jsonData?.data?.status).to.eql(\"RESOLVED\"));",
+									"pm.test(\"isResolved true (auto)\", () => pm.expect(jsonData?.data?.isResolved).to.eql(true));",
+									"pm.test(\"Zip changed\", () => pm.expect(jsonData?.data?.zipCode).to.eql(\"10002\"));",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Title\",\n  \"description\": \"Updated description\",\n  \"status\": \"RESOLVED\",\n  \"zipCode\": \"10002\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete item (owner)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200 or 204\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Response body is empty\", () => {\r",
+									"    pm.expect(pm.response.text()).to.eql(\"\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Delete item (owner) - Not Found after delete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200 or 204\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is RESOURCE_NOT_FOUND\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"RESOURCE_NOT_FOUND\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Item not found'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Item not found\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(jsonData.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(jsonData.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Delete item (not owner) - Forbidden",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 403 Forbidden\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(403);\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is FORBIDDEN\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"FORBIDDEN\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Forbidden: not your item'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Forbidden: not your item\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(jsonData.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(jsonData.meta.requestId).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Categories",
 			"item": [
 				{
