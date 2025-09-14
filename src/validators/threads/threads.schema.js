@@ -19,7 +19,13 @@ const listThreadsQuerySchema = z
   })
   .strict();
 
+// up to which message the user has read
+const markThreadReadBodySchema = z.object({
+  messageId: uuid,
+}).strict();
+
 module.exports = {
   createThreadBodySchema,
   listThreadsQuerySchema,
+  markThreadReadBodySchema,
 };
