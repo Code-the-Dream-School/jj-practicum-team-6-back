@@ -1,5 +1,5 @@
 const { prisma } = require('../../utils/prisma');
-const { getOrCreateThread, listThreadsForUser, markThreadAsRead } = require('../../repositories/threads/threads.repository');
+const { getOrCreateThread, listThreadsForUser, markThreadAsRead, countUnreadForUser } = require('../../repositories/threads/threads.repository');
 
 // POST /api/v1/threads
 async function postThread(req, res, next) {
@@ -128,8 +128,20 @@ async function markThreadRead(req, res, next) {
   }
 }
 
+// GET /threads/unread-count
+async function getUnreadCount(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const count = await countUnreadForUser(userId);
+    res.status(200).json({ success: true, data: { unreadCount: count } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   postThread,
   getThreads,
-  markThreadRead
+  markThreadRead,
+  getUnreadCount,
 };

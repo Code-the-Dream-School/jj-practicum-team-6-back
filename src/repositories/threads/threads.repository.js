@@ -89,8 +89,34 @@ async function markThreadAsRead(threadId, userId, messageId) {
   }
 }
 
+// Count unread messages
+async function countUnreadForUser(userId) {
+  // Fetch threads where the user participates
+  const threads = await prisma.thread.findMany({
+    where: {
+      OR: [{ ownerId: userId }, { participantId: userId }],
+    },
+    include: { messages: true },
+  });
+
+  let totalUnread = 0;
+
+  for (const t of threads) {
+    if (t.ownerId === userId) {
+      const lastReadAt = t.ownerLastReadAt || new Date(0);
+      totalUnread += t.messages.filter(m => m.createdAt > lastReadAt && m.senderId !== userId).length;
+    } else if (t.participantId === userId) {
+      const lastReadAt = t.participantLastReadAt || new Date(0);
+      totalUnread += t.messages.filter(m => m.createdAt > lastReadAt && m.senderId !== userId).length;
+    }
+  }
+
+  return totalUnread;
+}
+
 module.exports = {
   getOrCreateThread,
   listThreadsForUser,
   markThreadAsRead,
+  countUnreadForUser,
 };
