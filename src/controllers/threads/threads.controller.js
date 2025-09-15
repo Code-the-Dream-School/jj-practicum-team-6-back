@@ -1,5 +1,5 @@
 const { prisma } = require('../../utils/prisma');
-const { getOrCreateThread, listThreadsForUser } = require('../../repositories/threads/threads.repository');
+const { getOrCreateThread, listThreadsForUser, markThreadAsRead, countUnreadForUser } = require('../../repositories/threads/threads.repository');
 
 // POST /api/v1/threads
 async function postThread(req, res, next) {
@@ -87,7 +87,61 @@ async function getThreads(req, res, next) {
   }
 }
 
+// POST /threads/:threadId/read
+async function markThreadRead(req, res, next) {
+  try {
+    const { threadId } = req.params;
+    const { messageId } = req.body;
+    const userId = req.user.id;
+
+    const updated = await markThreadAsRead(threadId, userId, messageId);
+
+    if (updated === 'forbidden') {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not allowed to mark this thread' },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      thread: updated,
+      data: updated
+    });
+  } catch (err) {
+    // Prisma UUID error
+    if (err.code === 'P2023') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_UUID', message: 'ThreadId or MessageId is invalid' },
+      });
+    }
+
+    if (err.message === 'Thread not found') {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'THREAD_NOT_FOUND', message: 'Thread does not exist' },
+      });
+    }
+
+    next(err);
+  }
+}
+
+// GET /threads/unread-count
+async function getUnreadCount(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const count = await countUnreadForUser(userId);
+    res.status(200).json({ success: true, data: { unreadCount: count } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   postThread,
   getThreads,
+  markThreadRead,
+  getUnreadCount,
 };

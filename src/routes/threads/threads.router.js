@@ -3,8 +3,8 @@ const router = express.Router();
 
 const { requireAuth } = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
-const { postThread, getThreads } = require('../../controllers/threads/threads.controller');
-const { createThreadBodySchema, listThreadsQuerySchema } = require('../../validators/threads/threads.schema');
+const { postThread, getThreads, markThreadRead, getUnreadCount } = require('../../controllers/threads/threads.controller');
+const { createThreadBodySchema, listThreadsQuerySchema, markThreadReadBodySchema } = require('../../validators/threads/threads.schema');
 const messagesRouter = require('../messages/messages.router');
 
 // Protect nested routes too
@@ -24,6 +24,21 @@ router.get(
   requireAuth,
   validate({ query: listThreadsQuerySchema }),
   getThreads
+);
+
+// POST /api/v1/threads/:threadId/read
+router.post(
+  '/:threadId/read',
+  requireAuth,
+  validate({ body: markThreadReadBodySchema }),
+  markThreadRead
+);
+
+// GET /api/v1/threads/unread-count
+router.get(
+  '/unread-count',
+  requireAuth,
+  getUnreadCount
 );
 
 module.exports = router;
