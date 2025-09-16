@@ -1,12 +1,17 @@
 const { prisma } = require('../../utils/prisma');
-const { getOrCreateThread, listThreadsForUser, markThreadAsRead, countUnreadForUser } = require('../../repositories/threads/threads.repository');
+const {
+  getOrCreateThread,
+  listThreadsForUser,
+  markThreadAsRead,
+  countUnreadForUser,
+} = require('../../repositories/threads/threads.repository');
 
 // POST /api/v1/threads
 async function postThread(req, res, next) {
   try {
     const { itemId, participantId } = req.body;
 
-    // Load item and owner
+    // Load item and its owner
     const item = await prisma.item.findUnique({
       where: { id: itemId },
       select: { id: true, ownerId: true },
@@ -18,7 +23,7 @@ async function postThread(req, res, next) {
       });
     }
 
-    // Authorization: only item owner or participant themselves
+    // Authorization: only item owner or the participant themselves can create a thread
     if (req.user.id !== item.ownerId && req.user.id !== participantId) {
       return res.status(403).json({
         success: false,
@@ -32,7 +37,9 @@ async function postThread(req, res, next) {
       participantId,
     });
 
-    return res.status(created ? 201 : 200).json({ success: true, data: thread });
+    return res
+      .status(created ? 201 : 200)
+      .json({ success: true, data: thread });
   } catch (err) {
     next(err);
   }
@@ -43,7 +50,7 @@ async function getThreads(req, res, next) {
   try {
     const { itemId, page = 1, size = 20 } = req.query;
 
-    // Optional strict check for itemId: only owner or existing participant can view
+    // Optional strict check for itemId: only the item owner or an existing participant can see these threads
     if (itemId) {
       const item = await prisma.item.findUnique({
         where: { id: itemId },
@@ -62,32 +69,43 @@ async function getThreads(req, res, next) {
         if (membership === 0) {
           return res.status(403).json({
             success: false,
-            error: { code: 'FORBIDDEN', message: 'Not allowed to view threads for this item' },
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Not allowed to view threads for this item',
+            },
           });
         }
       }
     }
 
+    // Repository now returns threads with `item` and `otherUser` already populated
+    const pageNum = Number(page) || 1;
+    const sizeNum = Number(size) || 20;
+
     const { threads, total } = await listThreadsForUser(req.user.id, {
       itemId,
-      page: Number(page) || 1,
-      size: Number(size) || 20,
+      page: pageNum,
+      size: sizeNum,
     });
 
     const meta = {
-      page: Number(page) || 1,
-      size: Number(size) || 20,
+      page: pageNum,
+      size: sizeNum,
       total,
-      pages: Math.ceil(total / (Number(size) || 20)),
+      pages: Math.max(1, Math.ceil(total / sizeNum)),
     };
 
-    return res.status(200).json({ success: true, data: threads, meta });
+    return res.status(200).json({
+      success: true,
+      data: threads, // each thread includes: item {id,title,status} and otherUser {id,firstName,lastName,avatarUrl}
+      meta,
+    });
   } catch (err) {
     next(err);
   }
 }
 
-// POST /threads/:threadId/read
+// POST /api/v1/threads/:threadId/read
 async function markThreadRead(req, res, next) {
   try {
     const { threadId } = req.params;
@@ -103,10 +121,10 @@ async function markThreadRead(req, res, next) {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      thread: updated,
-      data: updated
+      thread: updated, // kept for backward-compat
+      data: updated,
     });
   } catch (err) {
     // Prisma UUID error
@@ -128,12 +146,12 @@ async function markThreadRead(req, res, next) {
   }
 }
 
-// GET /threads/unread-count
+// GET /api/v1/threads/unread-count
 async function getUnreadCount(req, res, next) {
   try {
     const userId = req.user.id;
     const count = await countUnreadForUser(userId);
-    res.status(200).json({ success: true, data: { unreadCount: count } });
+    return res.status(200).json({ success: true, data: { unreadCount: count } });
   } catch (err) {
     next(err);
   }
