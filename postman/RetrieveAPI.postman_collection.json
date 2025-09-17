@@ -110,6 +110,288 @@
 			]
 		},
 		{
+			"name": "Prerequisites 1",
+			"item": [
+				{
+					"name": "POST - Register user 2 - participant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"if (jsonData.success && jsonData.data) {\r",
+									"    const user = jsonData.data.user;\r",
+									"    const token = jsonData.data.accessToken;\r",
+									"    console.log(\"participantToken\", token)\r",
+									"    \r",
+									"    pm.environment.set(\"participantId\", user.id || \"\");\r",
+									"    pm.environment.set(\"email2\", user.email || \"\");\r",
+									"\r",
+									"    if (token) {\r",
+									"        pm.environment.set(\"participantToken\", token);\r",
+									"    }\r",
+									"\r",
+									"    pm.test(\"Email matches input\", () => {\r",
+									"        const expectedEmail = pm.environment.get(\"generatedEmail\");\r",
+									"        console.log(\"pre user2: \", expectedEmail)\r",
+									"        // pm.expect(user.email).to.eql(expectedEmail);\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"First and last name are correct\", () => {\r",
+									"        pm.expect(user.firstName).to.eql(\"User\");\r",
+									"        pm.expect(user.lastName).to.eql(\"Test\");\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"Zip code and phone number are correct\", () => {\r",
+									"        pm.expect(user.zipCode).to.eql(\"95050\");\r",
+									"        pm.expect(user.phoneNumber).to.eql(\"1234567890\");\r",
+									"    });\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Response time is under 500ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const randomInt = Math.floor(Math.random() * 1000);\r",
+									"const email = `user${randomInt}@example.com`;\r",
+									"\r",
+									"pm.environment.set(\"generatedEmail\", email);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{generatedEmail}}\",\r\n  \"password\": \"p@ssword#135\",\r\n  \"confirmPassword\": \"p@ssword#135\",\r\n  \"firstName\": \"User\",\r\n  \"lastName\": \"Test\",\r\n  \"zipCode\": \"95050\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Login User 2 - participant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"const token = jsonData.data.accessToken;\r",
+									"console.log(\"participantToken login\", token)\r",
+									"\r",
+									"if (token) {\r",
+									"  pm.environment.set(\"participantToken\", token);\r",
+									"}\r",
+									"\r",
+									"const userId = jsonData?.data?.user?.id;\r",
+									"if (userId) {\r",
+									"  pm.environment.set(\"participantId\", userId);\r",
+									"  console.log(\"participantId login\", userId)\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{email2}}\", // parsitipant\r\n  \"password\": \"p@ssword#135\" // replace with actual password\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create item - temp for User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Created 201\", () => pm.expect(pm.response.code).to.eql(201));",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response success = true\", () => {",
+									"  pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Created item has an id\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.id).to.be.a(\"string\");",
+									"});",
+									"",
+									"if (jsonData?.success && jsonData.data) {",
+									"    if (jsonData.data.id) {",
+									"        pm.environment.set(\"itemId_temp\", jsonData.data.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.categoryName) {",
+									"        pm.environment.set(\"categoryName\", jsonData.data.categoryName);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.id) {",
+									"        pm.environment.set(\"ownerId\", jsonData.data.owner.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.email) {",
+									"        pm.environment.set(\"ownerEmail\", jsonData.data.owner.email);",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Created item has required fields\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"title\");",
+									"  pm.expect(jsonData.data).to.have.property(\"description\");",
+									"  pm.expect(jsonData.data).to.have.property(\"status\");",
+									"  pm.expect(jsonData.data).to.have.property(\"categoryName\");",
+									"  pm.expect(jsonData.data).to.have.property(\"zipCode\");",
+									"  pm.expect(jsonData.data).to.have.property(\"dateReported\");",
+									"  pm.expect(jsonData.data).to.have.property(\"updatedAt\");",
+									"});",
+									"",
+									"pm.test(\"Category name matches request\", () => {",
+									"  pm.expect(jsonData.data.categoryName).to.eql(pm.environment.get(\"categoryName\"));",
+									"});",
+									"",
+									"pm.test(\"Owner info is present\", () => {",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"email\");",
+									"});",
+									"",
+									"pm.test(\"Meta contains requestId\", () => {",
+									"  pm.expect(jsonData.meta).to.have.property(\"requestId\");",
+									"  pm.expect(jsonData.meta.requestId).to.be.a(\"string\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{participantToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Temp Item {{$randomInt}}\",\n  \"description\": \"for patch/delete tests\",\n  \"status\": \"LOST\",\n  \"categoryName\": \"{{categoryName}}\",\n  \"zipCode\": \"10001\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Auth",
 			"item": [
 				{
@@ -132,7 +414,7 @@
 									"if (jsonData.success && jsonData.data) {\r",
 									"    const user = jsonData.data.user;\r",
 									"    const token = jsonData.data.accessToken;\r",
-									"\r",
+									"    console.log(\"token\", token)\r",
 									"    // Save user info to environment variables\r",
 									"    pm.environment.set(\"userId\", user.id || \"\");\r",
 									"    pm.environment.set(\"email\", user.email || \"\");\r",
@@ -142,7 +424,6 @@
 									"    pm.environment.set(\"phoneNumber\", user.phoneNumber || \"\");\r",
 									"    pm.environment.set(\"avatarUrl\", user.avatarUrl || \"\");\r",
 									"\r",
-									"    // Save JWT if returned\r",
 									"    if (token) {\r",
 									"        pm.environment.set(\"token\", token);\r",
 									"    }\r",
@@ -152,7 +433,6 @@
 									"        const expectedEmail = pm.environment.get(\"generatedEmail\");\r",
 									"        pm.expect(user.email).to.eql(expectedEmail);\r",
 									"    });\r",
-									"\r",
 									"\r",
 									"    pm.test(\"First and last name are correct\", () => {\r",
 									"        pm.expect(user.firstName).to.eql(\"User\");\r",
@@ -243,7 +523,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"email\": \"bob3@example.com\",\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"confirmPassword\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"Bob\",\r\n  \"lastName\": \"Adams\",\r\n  \"zipCode\": \"53202\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
+							"raw": "{\r\n  \"email\": \"{{generatedEmail}}\",\r\n  \"password\": \"p@ssw0rD#137\",\r\n  \"confirmPassword\": \"p@ssw0rD#137\",\r\n  \"firstName\": \"User\",\r\n  \"lastName\": \"Test\",\r\n  \"zipCode\": \"53202\",\r\n  \"phoneNumber\": \"1234567890\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -515,24 +795,23 @@
 									"    pm.response.to.be.json;\r",
 									"});\r",
 									"\r",
-									"let json = {};\r",
-									"try { json = pm.response.json(); } catch (e) {}\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
 									"\r",
 									"const token =\r",
-									"  json?.data?.accessToken ||\r",
-									"  json?.accessToken ||\r",
-									"  json?.data?.token ||\r",
-									"  json?.token;\r",
+									"  jsonData?.data?.accessToken ||\r",
+									"  jsonData?.accessToken ||\r",
+									"  jsonData?.data?.token ||\r",
+									"  jsonData?.token;\r",
 									"\r",
 									"if (token) {\r",
 									"  pm.environment.set(\"token\", token);\r",
 									"}\r",
 									"\r",
-									"const userId = json?.data?.user?.id;\r",
-									"if (userId) {\r",
-									"  pm.environment.set(\"userId\", userId);\r",
-									"}\r",
-									""
+									"const user = jsonData?.data?.user;\r",
+									"if (user) {\r",
+									"  pm.environment.set(\"userId\", user.id || \"\");\r",
+									"}"
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -550,7 +829,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"email\": \"{{email}}\", // owner\r\n  \"password\": \"p@ssword#135\" // replace with actual password\r\n}\r\n",
+							"raw": "{\r\n  \"email\": \"{{email}}\",\r\n//   \"email\": \"user838@example.com\",\r\n  \"password\": \"p@ssword#135\" // replace with actual password\r\n}\r\n",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -817,7 +1096,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"email\": \"test.user@example.com\",\r\n  \"password\": \"p@ssworD#321\" \r\n}\r\n",
+							"raw": "{\r\n  \"email\": \"test.user@example.com\", // random\r\n  \"password\": \"passworD#321\" // random\r\n}\r\n",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1143,6 +1422,550 @@
 								"v1",
 								"auth",
 								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "GET - All categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"const list =\r",
+									"  Array.isArray(j.data) ? j.data :\r",
+									"  (Array.isArray(j?.data?.items) ? j.data.items : []);\r",
+									"\r",
+									"const firstId = list?.[0]?.name;\r",
+									"if (firstId) pm.environment.set(\"categoryName\", firstId);\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get One category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Get One category - Nonexistent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for nonexistent category ID\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.eql(\"Not found\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"nocategoryName"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is between 200 and 2301\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.within(200, 201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(j.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Category name matches expected\", () => {\r",
+									"    pm.expect(j.data.name).to.eql(\"Test Category\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Test Category\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Create category - EMPTY name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 400 for empty category name\", function () {\r",
+									"  pm.response.to.have.status(400);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"Category name cannot be empty\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Create category with exist name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 409 for duplicate category name\", function () {\r",
+									"  pm.response.to.have.status(409);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"already exists\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"{{categoryName}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (j && j.success && j.data && j.data.name) {\r",
+									"    pm.environment.set(\"categoryName\", j.data.name);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(j.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Test Category Update\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG Update category - nonexistent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for updating nonexistent category\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.include(\"Not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"UpdatedName\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"nocategoryName"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Success flag is true\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Message confirms deletion\", () => {\r",
+									"    pm.expect(jsonData.message).to.include(\"Category deleted\");\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category - Not Found (after delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Should fail with 404 for deleting nonexistent category\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"  const res = pm.response.json();\r",
+									"  pm.expect(res.success).to.eql(false);\r",
+									"  pm.expect(res.message).to.eql(\"Not found\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Items 1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{categoryName}}"
 							]
 						}
 					},
@@ -1969,7 +2792,6 @@
 								"exec": [
 									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
 									"\r",
-									"// Parse response safely\r",
 									"let jsonData = {};\r",
 									"try { jsonData = pm.response.json(); } catch (e) {}\r",
 									"\r",
@@ -2185,11 +3007,15 @@
 								"exec": [
 									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));",
 									"",
-									"const jsonData = pm.response.json();",
+									"let jsonData = {};",
+									"try { jsonData = pm.response.json(); } catch (e) {};",
 									"",
 									"pm.test(\"Title updated\", () => pm.expect(jsonData?.data?.title).to.eql(\"Updated Title\"));",
+									"",
 									"pm.test(\"Status is RESOLVED\", () => pm.expect(jsonData?.data?.status).to.eql(\"RESOLVED\"));",
+									"",
 									"pm.test(\"isResolved true (auto)\", () => pm.expect(jsonData?.data?.isResolved).to.eql(true));",
+									"",
 									"pm.test(\"Zip changed\", () => pm.expect(jsonData?.data?.zipCode).to.eql(\"10002\"));",
 									""
 								],
@@ -2236,6 +3062,232 @@
 					"response": []
 				},
 				{
+					"name": "Update item (owner) - empty payload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {",
+									"    pm.expect(pm.response.code).to.eql(422);",
+									"});",
+									"",
+									"let jsonData = {};",
+									"try { jsonData = pm.response.json(); } catch (e) {}",
+									"",
+									"pm.test(\"Response success = false\", () => {",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"});",
+									"",
+									"pm.test(\"Error code VALIDATION_ERROR\", () => {",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");",
+									"});",
+									"",
+									"pm.test(\"Error mentions at least one field required\", () => {",
+									"    pm.expect(jsonData.error.details[0].path).to.eql(\"body\");",
+									"    pm.expect(jsonData.error.details[0].message).to.include(\"At least one field required\");",
+									"});",
+									"",
+									"pm.test(\"Response contains requestId\", () => {",
+									"    pm.expect(jsonData.meta).to.have.property(\"requestId\");",
+									"    pm.expect(jsonData.meta.requestId).to.be.a(\"string\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Update Item - Invalid status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 422 Unprocessable Entity\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(422);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error points to status field\", () => {\r",
+									"    pm.expect(jsonData.error.details[0].path).to.eql(\"body.status\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing fields\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(jsonData.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(jsonData.meta.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"status\": \"INVALID_STATUS\"\r\n}\r\n\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG – Update Item (not owner) - Forbidden",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 403 Forbidden\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(403);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"pm.test(\"Response success = false\", () => {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is FORBIDDEN\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"FORBIDDEN\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions not your item\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.include(\"not your item\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains requestId\", () => {\r",
+									"    pm.expect(jsonData.meta).to.have.property(\"requestId\");\r",
+									"    pm.expect(jsonData.meta.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"status\": \"FOUND\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Delete item (owner)",
 					"event": [
 						{
@@ -2244,7 +3296,8 @@
 								"exec": [
 									"pm.test(\"Status 200 or 204\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));\r",
 									"\r",
-									"const jsonData = pm.response.json();\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
 									"\r",
 									"pm.test(\"Response body is empty\", () => {\r",
 									"    pm.expect(pm.response.text()).to.eql(\"\");\r",
@@ -2290,9 +3343,12 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status 200 or 204\", () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));\r",
+									"pm.test(\"Status 404 Not Found\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(404);\r",
+									"});\r",
 									"\r",
-									"const jsonData = pm.response.json();\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
 									"\r",
 									"pm.test(\"Response success = false\", () => {\r",
 									"    pm.expect(jsonData.success).to.eql(false);\r",
@@ -2355,7 +3411,8 @@
 									"    pm.expect(pm.response.code).to.eql(403);\r",
 									"});\r",
 									"\r",
-									"const jsonData = pm.response.json();\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
 									"\r",
 									"pm.test(\"Response success = false\", () => {\r",
 									"    pm.expect(jsonData.success).to.eql(false);\r",
@@ -2380,6 +3437,16 @@
 						}
 					],
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "DELETE",
 						"header": [],
 						"url": {
@@ -2400,388 +3467,68 @@
 			]
 		},
 		{
-			"name": "Categories",
+			"name": "Treads & messages",
 			"item": [
 				{
-					"name": "GET - All categories",
+					"name": "Prerequisites - Create item (User 1)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
-									"\r",
-									"pm.test(\"Response is valid JSON\", () => {\r",
-									"    pm.response.to.be.withBody;\r",
-									"    pm.response.to.be.json;\r",
-									"});\r",
-									"\r",
-									"let j = {};\r",
-									"try { j = pm.response.json(); } catch (e) {}\r",
-									"\r",
-									"const list =\r",
-									"  Array.isArray(j.data) ? j.data :\r",
-									"  (Array.isArray(j?.data?.items) ? j.data.items : []);\r",
-									"\r",
-									"const firstId = list?.[0]?.name;\r",
-									"if (firstId) pm.environment.set(\"categoryName\", firstId);\r",
-									"\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get One category",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
-									"\r",
-									"pm.test(\"Response is valid JSON\", () => {\r",
-									"    pm.response.to.be.withBody;\r",
-									"    pm.response.to.be.json;\r",
-									"});\r",
-									"\r",
-									"let j = {};\r",
-									"try { j = pm.response.json(); } catch (e) {}\r",
-									"\r",
-									"if (j && j.success && j.data && j.data.name) {\r",
-									"    pm.environment.set(\"categoryName\", j.data.name);\r",
-									"}"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"{{categoryName}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "NEG Get One category - Nonexistent",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Should fail with 404 for nonexistent category ID\", function () {\r",
-									"  pm.response.to.have.status(404);\r",
-									"  const res = pm.response.json();\r",
-									"  pm.expect(res.success).to.eql(false);\r",
-									"  pm.expect(res.message).to.eql(\"Not found\");\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"nocategoryName"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create category",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is between 200 and 2301\", () => {\r",
-									"    pm.expect(pm.response.code).to.be.within(200, 201);\r",
-									"});\r",
-									"\r",
-									"pm.test(\"Response is valid JSON\", () => {\r",
-									"    pm.response.to.be.withBody;\r",
-									"    pm.response.to.be.json;\r",
-									"});\r",
-									"\r",
-									"let j = {};\r",
-									"try { j = pm.response.json(); } catch (e) {}\r",
-									"\r",
-									"if (j && j.success && j.data && j.data.name) {\r",
-									"    pm.environment.set(\"categoryName\", j.data.name);\r",
-									"}\r",
-									"\r",
-									"pm.test(\"Success flag is true\", () => {\r",
-									"    pm.expect(j.success).to.eql(true);\r",
-									"});\r",
-									"\r",
-									"pm.test(\"Category name matches expected\", () => {\r",
-									"    pm.expect(j.data.name).to.eql(\"Test Category\");\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"Test Category\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "NEG - Create category - EMPTY name",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Should fail with 400 for empty category name\", function () {\r",
-									"  pm.response.to.have.status(400);\r",
-									"  const res = pm.response.json();\r",
-									"  pm.expect(res.success).to.eql(false);\r",
-									"  pm.expect(res.message).to.include(\"Category name cannot be empty\");\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "NEG - Create category with exist name",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Should fail with 409 for duplicate category name\", function () {\r",
-									"  pm.response.to.have.status(409);\r",
-									"  const res = pm.response.json();\r",
-									"  pm.expect(res.success).to.eql(false);\r",
-									"  pm.expect(res.message).to.include(\"already exists\");\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"Clothing\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update category",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status 200\", () => pm.expect(pm.response.code).to.eql(200));\r",
-									"\r",
-									"pm.test(\"Response is valid JSON\", () => {\r",
-									"    pm.response.to.be.withBody;\r",
-									"    pm.response.to.be.json;\r",
-									"});\r",
-									"\r",
-									"let j = {};\r",
-									"try { j = pm.response.json(); } catch (e) {}\r",
-									"\r",
-									"if (j && j.success && j.data && j.data.name) {\r",
-									"    pm.environment.set(\"categoryName\", j.data.name);\r",
-									"}\r",
-									"\r",
-									"pm.test(\"Success flag is true\", () => {\r",
-									"    pm.expect(j.success).to.eql(true);\r",
-									"});\r",
-									"\r",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"Test category update\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"categories",
-								"{{categoryName}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "NEG Update category - nonexistent",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Should fail with 404 for updating nonexistent category\", function () {\r",
-									"  pm.response.to.have.status(404);\r",
-									"  const res = pm.response.json();\r",
-									"  pm.expect(res.success).to.eql(false);\r",
-									"  pm.expect(res.message).to.include(\"Not found\");\r",
+									"pm.test(\"Created 201\", () => pm.expect(pm.response.code).to.eql(201));",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response success = true\", () => {",
+									"  pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Created item has an id\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.id).to.be.a(\"string\");",
+									"});",
+									"",
+									"if (jsonData?.success && jsonData.data) {",
+									"    if (jsonData.data.id) {",
+									"        pm.environment.set(\"itemId\", jsonData.data.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.categoryName) {",
+									"        pm.environment.set(\"categoryName\", jsonData.data.categoryName);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.id) {",
+									"        pm.environment.set(\"ownerId\", jsonData.data.owner.id);",
+									"    }",
+									"",
+									"    if (jsonData.data.owner?.email) {",
+									"        pm.environment.set(\"ownerEmail\", jsonData.data.owner.email);",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Created item has required fields\", () => {",
+									"  pm.expect(jsonData.data).to.have.property(\"title\");",
+									"  pm.expect(jsonData.data).to.have.property(\"description\");",
+									"  pm.expect(jsonData.data).to.have.property(\"status\");",
+									"  pm.expect(jsonData.data).to.have.property(\"categoryName\");",
+									"  pm.expect(jsonData.data).to.have.property(\"zipCode\");",
+									"  pm.expect(jsonData.data).to.have.property(\"dateReported\");",
+									"  pm.expect(jsonData.data).to.have.property(\"updatedAt\");",
+									"});",
+									"",
+									"pm.test(\"Category name matches request\", () => {",
+									"  pm.expect(jsonData.data.categoryName).to.eql(pm.environment.get(\"categoryName\"));",
+									"});",
+									"",
+									"pm.test(\"Owner info is present\", () => {",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"id\");",
+									"  pm.expect(jsonData.data.owner).to.have.property(\"email\");",
+									"});",
+									"",
+									"pm.test(\"Meta contains requestId\", () => {",
+									"  pm.expect(jsonData.meta).to.have.property(\"requestId\");",
+									"  pm.expect(jsonData.meta.requestId).to.be.a(\"string\");",
 									"});"
 								],
 								"type": "text/javascript",
@@ -2790,7 +3537,17 @@
 						}
 					],
 					"request": {
-						"method": "PUT",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -2800,7 +3557,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"UpdatedName\"\r\n}",
+							"raw": "{\n  \"title\": \"Temp Item {{$randomInt}}\",\n  \"description\": \"for tread tests\",\n  \"status\": \"LOST\",\n  \"categoryName\": \"Documents\",\n  \"zipCode\": \"10001\"\n}\n",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2808,48 +3565,124 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/categories/nocategoryName",
+							"raw": "{{base_url}}/api/v1/items",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"categories",
-								"nocategoryName"
+								"items"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Delete category",
+					"name": "POST - Create Thread",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200 OK\", () => {\r",
-									"    pm.response.to.have.status(200);\r",
+									"pm.test(\"Status is 201 or 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([200,201]);\r",
 									"});\r",
 									"\r",
-									"pm.test(\"Response is valid JSON\", () => {\r",
-									"    pm.response.to.be.withBody;\r",
-									"    pm.response.to.be.json;\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"if (jsonData?.success && jsonData.data) {\r",
+									"    if (jsonData.data.id) {\r",
+									"        pm.environment.set(\"threadId\", jsonData.data.id);\r",
+									"        pm.environment.set(\"threadItemId\", jsonData.data.itemId);\r",
+									"        pm.environment.set(\"threadOwnerId\", jsonData.data.ownerId);\r",
+									"        pm.environment.set(\"threadParticipantId\", jsonData.data.participantId);\r",
+									"    }\r",
+									"}\r",
+									"pm.test(\"Response contains success true\", function () {\r",
+									"    pm.expect(pm.response.json().success).to.eql(true);\r",
 									"});\r",
 									"\r",
-									"const jsonData = pm.response.json();\r",
-									"\r",
-									"pm.test(\"Success flag is true\", () => {\r",
-									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"pm.test(\"Thread id exists\", function () {\r",
+									"    pm.expect(pm.response.json().data.id).to.exist;\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"itemId\": \"{{itemId}}\",\r\n  \"participantId\": \"{{participantId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create Thread - missing itemId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
 									"});\r",
 									"\r",
-									"pm.test(\"Message confirms deletion\", () => {\r",
-									"    pm.expect(jsonData.message).to.include(\"Category deleted\");\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"  pm.expect(jsonData.success).to.eql(false);\r",
 									"});\r",
 									"\r",
-									"pm.test(\"Response time is under 500ms\", () => {\r",
-									"    pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", function () {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error path mentions itemId\", function () {\r",
+									"    pm.expect(jsonData.error.details[0].path).to.include(\"body.itemId\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Missing itemId → invalid_type\", function () {\r",
+									"  pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_type\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Expected type is string\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(jsonData.error.details[0].expected).to.eql(\"string\");\r",
 									"});\r",
 									""
 								],
@@ -2859,14 +3692,242 @@
 						}
 					],
 					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"participantId\": \"{{participantId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
 							}
-						],
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create Thread - invalid itemId UUID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"  pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", function () {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error path mentions itemId\", function () {\r",
+									"    pm.expect(jsonData.error.details[0].path).to.include(\"body.itemId\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Missing itemId → invalid_type\", function () {\r",
+									"  pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_format\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"itemId\": \"invalid-uuid\",\r\n  \"participantId\": \"{{participantId}}\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create Thread - missing participantId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"  pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error path mentions participantId\", function () {\r",
+									"    pm.expect(jsonData.error.details[0].path).to.include(\"body.participantId\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Expected type is string\", function () {\r",
+									"    pm.expect(jsonData.error.details[0].expected).to.eql(\"string\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"itemId\": \"{{itemId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create Thread - empty body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"  pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", function () {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Missing itemId → invalid_type\", function () {\r",
+									"  pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_type\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error details → expected object\", function () {\r",
+									"  pm.expect(jsonData.error.details[0].expected).to.eql(\"object\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error details → path is body\", function () {\r",
+									"  pm.expect(jsonData.error.details[0].path).to.eql(\"body\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "",
@@ -2877,32 +3938,48 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"raw": "{{base_url}}/api/v1/threads/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"categories",
-								"{{categoryName}}"
+								"threads",
+								""
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Delete category - Not Found (after delete)",
+					"name": "NEG - POST - Create Thread  - Unauthorized user",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Should fail with 404 for deleting nonexistent category\", function () {\r",
-									"  pm.response.to.have.status(404);\r",
-									"  const res = pm.response.json();\r",
-									"  pm.expect(res.success).to.eql(false);\r",
-									"  pm.expect(res.message).to.eql(\"Not found\");\r",
+									"pm.test(\"Status code is 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", function () {\r",
+									"    pm.expect(jsonData.error?.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing Authorization\", function () {\r",
+									"    pm.expect(jsonData.error?.message).to.include(\"Missing Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Request ID is present\", function () {\r",
+									"    pm.expect(jsonData.meta?.requestId).to.be.a(\"string\");\r",
 									"});\r",
 									""
 								],
@@ -2912,17 +3989,14 @@
 						}
 					],
 					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"name\": \"Items 1\"\r\n}",
+							"raw": "{\r\n  \"itemId\": \"{{itemId_temp}\",\r\n  \"participantId\": \"{{participantId}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2930,15 +4004,1069 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/categories/{{categoryName}}",
+							"raw": "{{base_url}}/api/v1/threads/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"categories",
-								"{{categoryName}}"
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET - List Threads",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response contains array of threads\", function () {\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"    pm.expect(jsonData.data).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Thread ID saved to environment\", function () {\r",
+									"    pm.expect(pm.environment.get(\"threadId\")).to.exist;\r",
+									"});\r",
+									"\r",
+									"if (jsonData.data && jsonData.data.id) {\r",
+									"    pm.environment.set(\"threadId\", jsonData.data[0].id); \r",
+									"    // pm.environment.set(\"threadId\", jsonData.data.id);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET - List Threads - Unauthorized user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", function () {\r",
+									"    pm.expect(jsonData.error?.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message mentions missing Authorization\", function () {\r",
+									"    pm.expect(jsonData.error?.message).to.include(\"Missing Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Request ID is present\", function () {\r",
+									"    pm.expect(jsonData.meta?.requestId).to.be.a(\"string\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Create message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Success is true\", function () {\r",
+									"    pm.expect(jsonData.success).to.be.true;\r",
+									"});\r",
+									"\r",
+									"if (jsonData.data && jsonData.data.id) {\r",
+									"    pm.environment.set(\"messageId\", jsonData.data.id);\r",
+									"    pm.environment.set(\"threadId\", jsonData.data.threadId);\r",
+									"    pm.environment.set(\"senderId\", jsonData.data.senderId);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Message has expected keys\", function () {\r",
+									"    pm.expect(jsonData.data).to.have.all.keys(\"id\", \"threadId\", \"senderId\", \"body\", \"attachmentUrl\", \"createdAt\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Hello, this is a test message\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create message - Unauthorized user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Success is false\", function () {\r",
+									"    pm.expect(jsonData.success).to.be.false;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Unauthorized error message\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Hello, this is a test message from {{participantId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create message - Empty body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response success is false\", function () {\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", function () {\r",
+									"    pm.expect(jsonData.error?.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message indicates validation failure\", function () {\r",
+									"    pm.expect(jsonData.error?.message).to.include(\"validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is too_small\", function () {\r",
+									"    pm.expect(jsonData.error?.details?.[0]?.code).to.eql(\"too_small\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create message - missing body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Validation error for missing body\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"    pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_type\");\r",
+									"    pm.expect(jsonData.error.details[0].expected).to.eql(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Create message - Not Found (invalid tread)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Validation error for empty body\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"RESOURCE_NOT_FOUND\");\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Thread not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"My message\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/fdf27525-5323-44b8-b2e8-1989e57851c0/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"fdf27525-5323-44b8-b2e8-1989e57851c0",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET - messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Success is true\", function () {\r",
+									"    pm.expect(jsonData.success).to.be.true;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Data is an array\", function () {\r",
+									"  pm.expect(Array.isArray(jsonData.data)).to.be.true;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Meta contains count and nextBefore\", function () {\r",
+									"  pm.expect(jsonData.meta).to.have.property(\"count\");\r",
+									"  pm.expect(jsonData.meta).to.have.property(\"nextBefore\");\r",
+									"});\r",
+									"\r",
+									"if (Array.isArray(jsonData.data) && jsonData.data.length > 0) {\r",
+									"    const lastMsg = jsonData.data[jsonData.data.length - 1];\r",
+									"    pm.environment.set(\"messageId\", lastMsg.id);\r",
+									"    pm.environment.set(\"threadId\", lastMsg.threadId);\r",
+									"    pm.environment.set(\"senderId\", lastMsg.senderId);;\r",
+									"\r",
+									"\r",
+									"    pm.test(\"Message bodies are non-empty strings\", function () {\r",
+									"    jsonData.data.forEach((msg) => {\r",
+									"        pm.expect(typeof msg.body).to.eql(\"string\");\r",
+									"        pm.expect(msg.body.length).to.be.above(0);\r",
+									"    });\r",
+									"    });\r",
+									"\r",
+									"    pm.test(\"All messages belong to thread\", function () {\r",
+									"        jsonData.data.forEach(msg => {\r",
+									"            pm.expect(msg.threadId).to.eql(pm.environment.get(\"threadId\"));\r",
+									"        });\r",
+									"    });\r",
+									"} else {\r",
+									"  pm.test(\"Thread has no messages\", function () {\r",
+									"    pm.expect(jsonData.meta.count).to.eql(0);\r",
+									"    pm.expect(jsonData.data.length).to.eql(0);\r",
+									"  });\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET - messages - Not Found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 Not Found\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error is NOT_FOUND\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"RESOURCE_NOT_FOUND\");\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Thread not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/8c64b99f-807e-494f-8324-2b4e9dae162b/messages?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"8c64b99f-807e-494f-8324-2b4e9dae162b",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET - messages - Unauthorized user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error is UNAUTHORIZED\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/messages?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Unread count",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response has success true\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.success).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains unreadCount\", function () {\r",
+									"    pm.expect(jsonData.success).to.eql(true);\r",
+									"    pm.expect(jsonData.data).to.have.property(\"unreadCount\");\r",
+									"});\r",
+									"\r",
+									"if (jsonData.data && jsonData.data.unreadCount !== undefined) {\r",
+									"    pm.environment.set(\"unreadCount\", jsonData.data.unreadCount);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/unread-count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"unread-count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Unread count - Unauthorized user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error is UNAUTHORIZED\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"    pm.expect(json.error.message).to.include(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/unread-count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"unread-count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Read message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Thread object returned\", function () {\r",
+									"    pm.expect(pm.response.json().thread.id).to.exist;\r",
+									"});\r",
+									"\r",
+									"const json = pm.response.json();\r",
+									"if (json.data) {\r",
+									"    pm.environment.set(\"threadId\", json.data.id); \r",
+									"    // pm.environment.set(\"ownerLastReadMessageId\", json.thread.ownerLastReadMessageId);\r",
+									"    // pm.environment.set(\"participantLastReadMessageId\", json.thread.participantLastReadMessageId);\r",
+									"    // pm.environment.set(\"ownerLastReadAt\", json.thread.ownerLastReadAt);\r",
+									"    // pm.environment.set(\"participantLastReadAt\", json.thread.participantLastReadAt);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"messageId\": \"{{messageId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Read message - Unauthorized user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"messageId\": \"{{messageId}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Read message - Missing messageId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 Validation Error\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error details mention messageId\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"    pm.expect(json.error.details[0].path).to.eql(\"body.messageId\");\r",
+									"    pm.expect(json.error.details[0].code).to.eql(\"invalid_type\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Read message - Empty messageId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 Validation Error (empty ID)\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error mentions messageId required\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"    pm.expect(json.error.details[0].message).to.include(\"Invalid UUID\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"messageId\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST - Read message - Invalid UUID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 Validation Error (empty ID)\", function () {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error mentions messageId required\", function () {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"    pm.expect(json.error.details[0].message).to.include(\"Invalid UUID\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"messageId\": \"abc\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/threads/{{threadId}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"threads",
+								"{{threadId}}",
+								"read"
 							]
 						}
 					},
