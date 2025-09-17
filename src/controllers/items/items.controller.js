@@ -34,7 +34,9 @@ async function getItems(req, res, next) {
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
       },
-      { page: q.page, limit: q.limit, offset: q.offset }
+      { page: q.page, limit: q.limit, offset: q.offset },
+      // Ask service to include photos in the payloads
+      { includePhotos: true }
     );
 
     return res.json({
@@ -58,7 +60,8 @@ async function getItems(req, res, next) {
 async function getItemById(req, res, next) {
   try {
     const id = (req.validatedParams && req.validatedParams.id) || req.params.id;
-    const item = await itemsService.getItemById(id);
+    // Ask service to include photos for single item as well
+    const item = await itemsService.getItemById(id, { includePhotos: true });
     if (!item) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,

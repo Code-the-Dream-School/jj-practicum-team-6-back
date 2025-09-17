@@ -1,3 +1,4 @@
+// services/items/items.service.js
 const axios = require('axios');
 const itemsRepo = require('../../repositories/items/items.repository');
 const photosRepo = require('../../repositories/photos/photos.repository');
@@ -24,7 +25,12 @@ async function zipToCoords(zip, country = 'us') {
 }
 
 // LIST with optional geo-search (miles)
-async function getItems(filters, pagination) {
+// Now includes photos by default and exposes primaryPhotoUrl for convenience
+async function getItems(
+  filters,
+  pagination,
+  options = { includePhotos: true } // default to true so UI has previews
+) {
   let geo = filters.geo;
 
   // If ZIP is provided, geocode it to coordinates (strict: fail with 400 if not found)
@@ -39,12 +45,39 @@ async function getItems(filters, pagination) {
     geo = { lat: coords.lat, lng: coords.lng, radius: geo.radius };
   }
 
-  return itemsRepo.findMany({ filters: { ...filters, geo }, pagination });
+  // Ask repository to include photos and order them oldest → newest
+  const { items, total } = await itemsRepo.findMany({
+    filters: { ...filters, geo },
+    pagination,
+    includePhotos: !!options.includePhotos,
+    photosOrder: 'asc',
+  });
+
+  // Compute primaryPhotoUrl for convenience on the client
+  const mapped = (Array.isArray(items) ? items : []).map((it) => ({
+    ...it,
+    primaryPhotoUrl:
+      Array.isArray(it.photos) && it.photos.length ? it.photos[0].url : null,
+  }));
+
+  return { items: mapped, total };
 }
 
 // READ one
-async function getItemById(id) {
-  return itemsRepo.findById(id);
+// Now includes photos by default and exposes primaryPhotoUrl
+async function getItemById(id, options = { includePhotos: true }) {
+  const item = await itemsRepo.findById(id, {
+    includePhotos: !!options.includePhotos,
+    photosOrder: 'asc',
+  });
+
+  if (!item) return null;
+
+  return {
+    ...item,
+    primaryPhotoUrl:
+      Array.isArray(item.photos) && item.photos.length ? item.photos[0].url : null,
+  };
 }
 
 // CREATE: if zipCode is present and latitude/longitude not provided, geocode and fill
@@ -72,8 +105,17 @@ async function createItem(data, ownerId) {
 }
 
 // LIST self
+// Uses repository's findByOwner (already includes photos ordered asc) and exposes primaryPhotoUrl
 async function getSelfItems(ownerId, pagination) {
-  return itemsRepo.findByOwner(ownerId, pagination);
+  const { items, total } = await itemsRepo.findByOwner(ownerId, pagination);
+
+  const mapped = (Array.isArray(items) ? items : []).map((it) => ({
+    ...it,
+    primaryPhotoUrl:
+      Array.isArray(it.photos) && it.photos.length ? it.photos[0].url : null,
+  }));
+
+  return { items: mapped, total };
 }
 
 // UPDATE: if zipCode provided AND latitude/longitude not explicitly set, try to geocode
@@ -114,16 +156,18 @@ async function deleteItem(id, ownerId) {
 
 // Attach photos (owner)
 async function addItemPhotos(itemId, ownerId, photos) {
-  const item = await itemsRepo.findById(itemId);
-  const itemOwnerId = item?.ownerId ?? item?.userId;
+  // Ownership verification using repository
+  const item = await itemsRepo.findById(itemId, { includePhotos: false });
+  const itemOwnerId = item?.ownerId ?? item?.userId; // legacy fallback
   if (!item || itemOwnerId !== ownerId) return null;
   return photosRepo.addPhotos(itemId, photos);
 }
 
 // Delete photo (owner)
 async function deleteItemPhoto(itemId, ownerId, photoId) {
-  const item = await itemsRepo.findById(itemId);
-  const itemOwnerId = item?.ownerId ?? item?.userId;
+  // Ownership verification using repository
+  const item = await itemsRepo.findById(itemId, { includePhotos: false });
+  const itemOwnerId = item?.ownerId ?? item?.userId; // legacy fallback
   if (!item || itemOwnerId !== ownerId) return false;
   return photosRepo.deletePhoto(itemId, photoId);
 }
