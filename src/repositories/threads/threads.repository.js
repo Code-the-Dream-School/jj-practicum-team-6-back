@@ -103,7 +103,19 @@ async function listThreadsForUser(userId, { itemId, page = 1, size = 20 }) {
     prisma.thread.count({ where }),
   ]);
 
-  return { threads, total, page, size };
+  // Map to include `otherUser`
+  const mapped = threads.map((t) => {
+    const otherUser =
+      t.ownerId === userId ? t.participant : t.owner;
+
+    return {
+      ...t,
+      item: t.item,
+      otherUser,
+    };
+  });
+
+  return { threads: mapped, total, page, size };
 }
 
 // Mark thread messages as read up to a messageId
@@ -143,10 +155,14 @@ async function countUnreadForUser(userId) {
   for (const t of threads) {
     if (t.ownerId === userId) {
       const lastReadAt = t.ownerLastReadAt || new Date(0);
-      totalUnread += t.messages.filter(m => m.createdAt > lastReadAt && m.senderId !== userId).length;
+      totalUnread += t.messages.filter(
+        (m) => m.createdAt > lastReadAt && m.senderId !== userId
+      ).length;
     } else if (t.participantId === userId) {
       const lastReadAt = t.participantLastReadAt || new Date(0);
-      totalUnread += t.messages.filter(m => m.createdAt > lastReadAt && m.senderId !== userId).length;
+      totalUnread += t.messages.filter(
+        (m) => m.createdAt > lastReadAt && m.senderId !== userId
+      ).length;
     }
   }
 
