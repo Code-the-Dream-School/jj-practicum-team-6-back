@@ -4,17 +4,45 @@ const { prisma } = require('../../utils/prisma');
 async function getOrCreateThread({ itemId, ownerId, participantId }) {
   try {
     // Try to find existing thread
-    const existing = await prisma.thread.findUnique({
+    let existing = await prisma.thread.findUnique({
       where: { itemId_participantId: { itemId, participantId } },
+      // Return rich payload so the client can render right away
+      include: {
+        item: {
+          select: {
+            id: true, title: true, status: true,
+            photos: {
+              select: { id: true, url: true, createdAt: true },
+              orderBy: { createdAt: 'asc' }, // oldest → newest
+            },
+          },
+        },
+        owner: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        participant: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+      },
     });
     if (existing) return { thread: existing, created: false };
 
     // Otherwise create new
-    const thread = await prisma.thread.create({
-      data: {
-        itemId,
-        ownerId,
-        participantId,
+    await prisma.thread.create({
+      data: { itemId, ownerId, participantId },
+    });
+
+    // Fetch with include for consistent shape
+    const thread = await prisma.thread.findUnique({
+      where: { itemId_participantId: { itemId, participantId } },
+      include: {
+        item: {
+          select: {
+            id: true, title: true, status: true,
+            photos: {
+              select: { id: true, url: true, createdAt: true },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        },
+        owner: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        participant: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
       },
     });
     return { thread, created: true };
@@ -22,6 +50,19 @@ async function getOrCreateThread({ itemId, ownerId, participantId }) {
     if (err.code === 'P2002') {
       const thread = await prisma.thread.findUnique({
         where: { itemId_participantId: { itemId, participantId } },
+        include: {
+          item: {
+            select: {
+              id: true, title: true, status: true,
+              photos: {
+                select: { id: true, url: true, createdAt: true },
+                orderBy: { createdAt: 'asc' },
+              },
+            },
+          },
+          owner: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          participant: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        },
       });
       return { thread, created: false };
     }
@@ -35,13 +76,8 @@ async function listThreadsForUser(userId, { itemId, page = 1, size = 20 }) {
   const take = size;
 
   const where = itemId
-    ? {
-        itemId,
-        OR: [{ ownerId: userId }, { participantId: userId }],
-      }
-    : {
-        OR: [{ ownerId: userId }, { participantId: userId }],
-      };
+    ? { itemId, OR: [{ ownerId: userId }, { participantId: userId }] }
+    : { OR: [{ ownerId: userId }, { participantId: userId }] };
 
   const [threads, total] = await Promise.all([
     prisma.thread.findMany({
@@ -49,16 +85,19 @@ async function listThreadsForUser(userId, { itemId, page = 1, size = 20 }) {
       skip,
       take,
       orderBy: { updatedAt: 'desc' },
+      // Include item photos and user avatars for UI rendering
       include: {
         item: {
-          select: { id: true, title: true, status: true },
+          select: {
+            id: true, title: true, status: true,
+            photos: {
+              select: { id: true, url: true, createdAt: true },
+              orderBy: { createdAt: 'asc' }, // oldest first
+            },
+          },
         },
-        owner: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
-        },
-        participant: {
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
-        },
+        owner: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        participant: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
       },
     }),
     prisma.thread.count({ where }),
@@ -88,24 +127,15 @@ async function markThreadAsRead(threadId, userId, messageId) {
     // Only participants (owner or participant) can mark reads
     let updateData = {};
     if (thread.ownerId === userId) {
-      updateData = {
-        ownerLastReadMessageId: messageId,
-        ownerLastReadAt: new Date(),
-      };
+      updateData = { ownerLastReadMessageId: messageId, ownerLastReadAt: new Date() };
     } else if (thread.participantId === userId) {
-      updateData = {
-        participantLastReadMessageId: messageId,
-        participantLastReadAt: new Date(),
-      };
+      updateData = { participantLastReadMessageId: messageId, participantLastReadAt: new Date() };
     } else {
       // Not authorized
       return 'forbidden';
     }
 
-    return prisma.thread.update({
-      where: { id: threadId },
-      data: updateData,
-    });
+    return prisma.thread.update({ where: { id: threadId }, data: updateData });
   } catch (err) {
     console.error('Error in markThreadAsRead:', err);
     throw err; // let controller handle it
@@ -116,9 +146,7 @@ async function markThreadAsRead(threadId, userId, messageId) {
 async function countUnreadForUser(userId) {
   // Fetch threads where the user participates
   const threads = await prisma.thread.findMany({
-    where: {
-      OR: [{ ownerId: userId }, { participantId: userId }],
-    },
+    where: { OR: [{ ownerId: userId }, { participantId: userId }] },
     include: { messages: true },
   });
 

@@ -7,22 +7,47 @@ const includeRelations = {
   category: { select: { name: true } },
 };
 
-async function findMany({ filters, pagination }) {
-  const { status, category, isResolved, geo, q, zipCodeExact } = filters || {};
+function buildInclude({ includePhotos, photosOrder } = {}) {
+  const base = { ...includeRelations };
+  if (includePhotos) {
+    base.photos = {
+      select: { id: true, url: true, createdAt: true },
+      orderBy: { createdAt: photosOrder === 'desc' ? 'desc' : 'asc' },
+    };
+  }
+  return base;
+}
+
+async function findMany({
+  filters,
+  pagination,
+  includePhotos = false,
+  photosOrder = 'asc',
+}) {
+  const {
+    status,
+    category,
+    isResolved,
+    geo,
+    q,
+    zipCodeExact,
+    ownerId, // optional: filter by owner
+  } = filters || {};
   const { page, limit } = pagination;
   const skip = (page - 1) * limit;
 
-  // NO GEO branch 
+  const include = buildInclude({ includePhotos, photosOrder });
+
+  // NO-GEO branch (regular Prisma query)
   if (!geo) {
     const whereAND = [];
 
-    // Add filters dynamically only if values are provided
     if (status) whereAND.push({ status });
     if (typeof isResolved === 'boolean') whereAND.push({ isResolved });
     if (category) whereAND.push({ categoryName: category });
     if (zipCodeExact) whereAND.push({ zipCode: zipCodeExact });
+    if (ownerId) whereAND.push({ ownerId });
 
-    // Text search across title and description
     if (q && q.trim().length > 0) {
       whereAND.push({
         OR: [
@@ -40,7 +65,7 @@ async function findMany({ filters, pagination }) {
         skip,
         take: limit,
         orderBy: { dateReported: 'desc' },
-        include: includeRelations,
+        include,
       }),
       prisma.item.count({ where }),
     ]);
@@ -48,33 +73,24 @@ async function findMany({ filters, pagination }) {
     return { items, total };
   }
 
-  // GEO branch 
+  // GEO branch (raw SQL for distance ordering)
   const lat = Number(geo.lat);
   const lng = Number(geo.lng);
   const radius = Number(geo.radius);
 
-  // Build WHERE conditions dynamically
   const conditions = ["latitude IS NOT NULL", "longitude IS NOT NULL"];
-
-  if (status) {
-    conditions.push(`status = '${status}'`);
-  }
-  if (typeof isResolved === 'boolean') {
-    conditions.push(`is_resolved = ${isResolved}`);
-  }
-  if (category) {
-    conditions.push(`category_name = '${category}'`);
-  }
-  if (zipCodeExact) {
-    conditions.push(`zip_code = '${zipCodeExact}'`);
-  }
+  if (status) conditions.push(`status = '${status}'`);
+  if (typeof isResolved === 'boolean') conditions.push(`is_resolved = ${isResolved}`);
+  if (category) conditions.push(`category_name = '${category}'`);
+  if (zipCodeExact) conditions.push(`zip_code = '${zipCodeExact}'`);
+  if (ownerId) conditions.push(`owner_id = '${ownerId}'`);
   if (q && q.trim().length > 0) {
     conditions.push(`(title ILIKE '%${q}%' OR description ILIKE '%${q}%')`);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  // get matching item IDs ordered by distance
+  // IDs within radius (ordered by distance asc, then date desc)
   const idsRows = await prisma.$queryRawUnsafe(`
     WITH base AS (
       SELECT
@@ -100,7 +116,7 @@ async function findMany({ filters, pagination }) {
     SELECT id FROM within;
   `);
 
-  // Count total number of matches
+  // Total count within radius
   const totalRows = await prisma.$queryRawUnsafe(`
     WITH base AS (
       SELECT
@@ -123,10 +139,10 @@ async function findMany({ filters, pagination }) {
 
   if (ids.length === 0) return { items: [], total };
 
-  // Load full records and keep the order by distance
+  // Load full records and keep custom order
   const itemsUnordered = await prisma.item.findMany({
     where: { id: { in: ids } },
-    include: includeRelations,
+    include,
   });
 
   const orderMap = new Map(ids.map((id, i) => [id, i]));
@@ -135,10 +151,14 @@ async function findMany({ filters, pagination }) {
   return { items, total };
 }
 
-async function findById(id) {
+async function findById(
+  id,
+  options = { includePhotos: false, photosOrder: 'asc' }
+) {
+  const include = buildInclude(options);
   return prisma.item.findUnique({
     where: { id },
-    include: includeRelations,
+    include,
   });
 }
 
@@ -169,7 +189,7 @@ async function findByOwner(ownerId, { page, limit }) {
       skip,
       take: limit,
       orderBy: { dateReported: 'desc' },
-      include: includeRelations,
+      include: buildInclude({ includePhotos: true, photosOrder: 'asc' }),
     }),
     prisma.item.count({ where: { ownerId } }),
   ]);
@@ -191,7 +211,7 @@ async function updateByOwner(id, ownerId, data) {
     throw err;
   }
 
-  // Build patch object dynamically
+  // Dynamic patch
   const patch = {};
   if (data.title !== undefined) patch.title = data.title;
   if (data.description !== undefined) patch.description = data.description;
@@ -202,7 +222,6 @@ async function updateByOwner(id, ownerId, data) {
   if (data.isResolved !== undefined) patch.isResolved = data.isResolved;
   if (data.categoryName !== undefined) patch.categoryName = data.categoryName;
 
-  // if status = RESOLVED, also set isResolved = true
   if (data.status === 'RESOLVED' && data.isResolved === undefined) {
     patch.isResolved = true;
   }
@@ -228,7 +247,7 @@ async function deleteByOwner(id, ownerId) {
     throw err;
   }
 
-  // Cascade delete related records
+  // Manual cascade cleanup
   await prisma.$transaction([
     prisma.message.deleteMany({ where: { thread: { itemId: id } } }),
     prisma.thread.deleteMany({ where: { itemId: id } }),

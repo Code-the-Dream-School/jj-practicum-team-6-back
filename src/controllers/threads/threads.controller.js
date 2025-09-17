@@ -36,10 +36,25 @@ async function postThread(req, res, next) {
       ownerId: item.ownerId,
       participantId,
     });
+    
+    // Enrich with computed helpers for the client
+    const me = req.user.id;
+    const payload = {
+      ...thread,
+      // expose conversation partner as "otherUser"
+      otherUser: thread.ownerId === me ? thread.participant : thread.owner,
+      // convenience field for item thumbnail
+      item: {
+        ...thread.item,
+        primaryPhotoUrl:
+          Array.isArray(thread.item?.photos) && thread.item.photos.length
+            ? thread.item.photos[0].url
+            : null,
+      },
+    };
 
-    return res
-      .status(created ? 201 : 200)
-      .json({ success: true, data: thread });
+    return res.status(created ? 201 : 200).json({ success: true, data: payload });
+
   } catch (err) {
     next(err);
   }
@@ -88,18 +103,25 @@ async function getThreads(req, res, next) {
       size: sizeNum,
     });
 
+    // Add computed fields for convenience on the client (no breaking changes)
+    const me = req.user.id;
+    const enriched = threads.map(t => ({
+      ...t,
+      otherUser: t.ownerId === me ? t.participant : t.owner,
+      item: {
+        ...t.item,
+        primaryPhotoUrl:
+          Array.isArray(t.item?.photos) && t.item.photos.length ? t.item.photos[0].url : null,
+      },
+    }));
+
     const meta = {
       page: pageNum,
       size: sizeNum,
       total,
       pages: Math.max(1, Math.ceil(total / sizeNum)),
     };
-
-    return res.status(200).json({
-      success: true,
-      data: threads, // each thread includes: item {id,title,status} and otherUser {id,firstName,lastName,avatarUrl}
-      meta,
-    });
+    return res.status(200).json({ success: true, data: enriched, meta });
   } catch (err) {
     next(err);
   }
