@@ -1171,7 +1171,7 @@
 					"response": []
 				},
 				{
-					"name": "Get user",
+					"name": "Get user (auth /me)",
 					"event": [
 						{
 							"listen": "test",
@@ -1331,7 +1331,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMDZkMmNhZC04Yzg5LTQ2YzMtYjUyZS1kYzNjOWIxNGY5Y2UiLCJpYXQiOjE3NTcwNDk2NTMsImV4cCI6MTc1NzEzNjA1M30.upzYM6fIBdjKumVKKPATJzl_ocFPbquE",
+									"value": "upzYM6fIBdjKumVKKPATJzl_ocFPbquEinvalidToken",
 									"type": "string"
 								}
 							]
@@ -3467,6 +3467,1000 @@
 			]
 		},
 		{
+			"name": "Seen",
+			"item": [
+				{
+					"name": "POST Create Seen Mark (Mark item as seen)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Seen mark created\", function () {\r",
+									"  pm.response.to.have.status(201);\r",
+									"  \r",
+									"  const jsonData = pm.response.json();\r",
+									"\r",
+									"  pm.environment.set(\"seenMarkId\", jsonData.data.id);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG -  POST Create Seen Mark - Already marked as seen",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409\", () => {\r",
+									"    pm.response.to.have.status(409);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message for already seen\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.success).to.eql(false);\r",
+									"    pm.expect(res.error.code).to.eql(\"DUPLICATE\");\r",
+									"    pm.expect(res.error.message.toLowerCase()).to.include(\"already marked as seen\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - POST Create Seen Mark - Invalid itemId UUID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", () => {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message for invalid UUID\", () => {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.eql(false);\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"    pm.expect(jsonData.error.message.toLowerCase()).to.include(\"request validation failed\");\r",
+									"    pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_format\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Detail message is 'id must be a valid UUID'\", () => {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.error.details[0].message).to.eql(\"id must be a valid UUID\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/invalid-id/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"invalid-id",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG -  POST Create Seen Mark - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([400, 401]);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET All Seen Marks for item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response is successful\", function () {\r",
+									"  pm.response.to.have.status(200);\r",
+									"  \r",
+									"  const jsonData = pm.response.json();\r",
+									"  \r",
+									"  pm.expect(jsonData.success).to.eql(true);\r",
+									"  pm.expect(jsonData.data).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Save latest seenMarkId\", function () {\r",
+									"  const data = pm.response.json().data;\r",
+									"  if (data.length > 0) {\r",
+									"    const latestSeenMark = data[0]; // assuming sorted by newest\r",
+									"    pm.environment.set(\"seenMarkId\", latestSeenMark.id);\r",
+									"    console.log(\"Saved seenMarkId:\", latestSeenMark.id);\r",
+									"  } else {\r",
+									"    console.warn(\"No seen marks found\");\r",
+									"  }\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET All Seen Marks for item - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 401\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET All Seen Marks for Non-existing item ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 422\", () => {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Request validation failed'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"First detail message is 'id must be a valid UUID'\", () => {\r",
+									"    pm.expect(jsonData.error.details[0].message).to.eql(\"id must be a valid UUID\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/invalid-uuid/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"invalid-uuid",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET All Seen Marks NOT FOUND for Non-existing ITEM",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", () => {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Error code is RESOURCE_NOT_FOUND\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"RESOURCE_NOT_FOUND\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Item not found'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Item not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/f661d769-fa3e-44da-bec3-54101256e4a8/seen",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"f661d769-fa3e-44da-bec3-54101256e4a8",
+								"seen"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET All Seen Marks for item - pagination (Run manually)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response is successful\", function () {\r",
+									"  pm.response.to.have.status(200);\r",
+									"  \r",
+									"  const jsonData = pm.response.json();\r",
+									"  \r",
+									"  pm.expect(jsonData.success).to.eql(true);\r",
+									"  pm.expect(jsonData.data).to.be.an(\"array\");\r",
+									"  pm.expect(jsonData).to.have.property(\"meta\").that.is.an(\"object\");\r",
+									"  pm.expect(jsonData.meta).to.have.property(\"count\").that.is.a(\"number\");\r",
+									"\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Save latest seenMarkId\", function () {\r",
+									"  const data = pm.response.json().data;\r",
+									"  if (data.length > 0) {\r",
+									"    const latestSeenMark = data[0]; // assuming sorted by newest\r",
+									"    pm.environment.set(\"seenMarkId\", latestSeenMark.id);\r",
+									"    if (latestSeenMark.id) {\r",
+									"      pm.environment.set(\"seenMarkId\", latestSeenMark.id);\r",
+									"      console.log(\"Saved seenMarkId:\", latestSeenMark.id);\r",
+									"    } else {\r",
+									"      console.warn(\"Seen mark has no ID\");\r",
+									"    }\r",
+									"  } else {\r",
+									"\r",
+									"    console.warn(\"No seen marks found\");\r",
+									"  }\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen?limit=10&page=1&sortBy=createdAt&sortOrder=desc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortOrder",
+									"value": "desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET specific seen mark by ID",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Marked as seen from mobile\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen/{{seenMarkId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen",
+								"{{seenMarkId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - GET specific seen mark by ID - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 401\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Marked as seen from mobile\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen/{{seenMarkId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen",
+								"{{seenMarkId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG -  GET specific seen mark by ID Copy 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 422\", () => {\r",
+									"    pm.response.to.have.status(422);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Request validation failed'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Detail message is 'seenMarkId must be a valid UUID'\", () => {\r",
+									"    pm.expect(jsonData.error.details[0].message).to.eql(\"seenMarkId must be a valid UUID\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Marked as seen from mobile\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen/another-invalid-uuid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen",
+								"another-invalid-uuid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete specific seen mark by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 204\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Marked as seen from mobile\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen/{{seenMarkId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen",
+								"{{seenMarkId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Delete specific seen mark - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 401\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"body\": \"Marked as seen from mobile\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/items/{{itemId_temp}}/seen/{{seenMarkId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"items",
+								"{{itemId_temp}}",
+								"seen",
+								"{{seenMarkId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Treads & messages",
 			"item": [
 				{
@@ -5067,6 +6061,469 @@
 								"threads",
 								"{{threadId}}",
 								"read"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"if (jsonData.success) {\r",
+									"    const user = jsonData.data;\r",
+									"\r",
+									"    pm.environment.set(\"firstName\", user.firstName || \"\");\r",
+									"    pm.environment.set(\"lastName\", user.lastName || \"\");\r",
+									"    pm.environment.set(\"zipCode\", user.zipCode || \"\");\r",
+									"    pm.environment.set(\"phoneNumber\", user.phoneNumber || \"\");\r",
+									"    pm.environment.set(\"avatarUrl\", user.avatarUrl || \"\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Get user - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success is false\", () => {\r",
+									"    pm.expect(pm.response.json().success).to.eql(false);\r",
+									"});\r",
+									"\r",
+									"const jsonData = pm.response.json();\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is 'Missing Authorization header'\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - Get user - Invalid token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Success is false\", () => {\r",
+									"    pm.expect(jsonData.success).to.be.false;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is about missing Authorization header\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": " invalid_token_123",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH - Update user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success is true\", () => {\r",
+									"    pm.expect(jsonData.success).to.be.true;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"First name updated\", () => {\r",
+									"    pm.expect(jsonData.data.firstName).to.eql(pm.environment.get(\"firstName\"));\r",
+									"    pm.expect(jsonData.data.lastName).to.eql(pm.environment.get(\"lastName\"));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Zip code updated\", () => {\r",
+									"    pm.expect(jsonData.data.zipCode).to.eql(\"12345\");\r",
+									"});\r",
+									"\r",
+									"if (jsonData.success) {\r",
+									"    const user = jsonData.data;\r",
+									"    pm.environment.set(\"firstName\", user.firstName || \"\");\r",
+									"    pm.environment.set(\"lastName\", user.lastName || \"\");\r",
+									"    pm.environment.set(\"zipCode\", user.zipCode || \"\");\r",
+									"    pm.environment.set(\"phoneNumber\", user.phoneNumber || \"\");\r",
+									"    pm.environment.set(\"avatarUrl\", user.avatarUrl || \"\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const randomSuffix = Math.floor(1000 + Math.random() * 90000);\r",
+									"\r",
+									"const newFirst = `Updated${randomSuffix}`;\r",
+									"const newLast = `TestUser${randomSuffix}`;\r",
+									"\r",
+									"pm.environment.set(\"firstName\", newFirst);\r",
+									"pm.environment.set(\"lastName\", newLast);\r",
+									"\r",
+									"console.log(\"Generated First Name:\", newFirst);\r",
+									"console.log(\"Generated Last Name:\", newLast);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phoneNumber\": \"9876543210\",\n  \"zipCode\": \"12345\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - PATCH - Update user - invalid phone number",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 422 (validation error)\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([400, 422]);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success is false\", () => {\r",
+									"    pm.expect(jsonData.success).to.be.false;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is VALIDATION_ERROR\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is correct\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.eql(\"Request validation failed\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Phone number validation error is returned\", () => {\r",
+									"    pm.expect(jsonData.error.details[0].path).to.eql(\"body.phoneNumber\");\r",
+									"    pm.expect(jsonData.error.details[0].code).to.eql(\"invalid_format\");\r",
+									"    pm.expect(jsonData.error.details[0].message).to.include(\"Phone must be E.164\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"abc9876543210\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "NEG - PATCH - Update user - Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"let jsonData = {};\r",
+									"try { jsonData = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"pm.test(\"Response is valid JSON\", () => {\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success is false\", () => {\r",
+									"    pm.expect(jsonData.success).to.be.false;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error code is UNAUTHORIZED\", () => {\r",
+									"    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Error message is about missing Authorization header\", () => {\r",
+									"    pm.expect(jsonData.error.message).to.include(\"Missing Authorization header\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/self",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"self"
 							]
 						}
 					},
