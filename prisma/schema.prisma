@@ -9,17 +9,17 @@ datasource db {
 
 /// users
 model User {
-  id                   String        @id @default(uuid()) @db.Uuid
-  firstName            String        @map("first_name")
-  lastName             String        @map("last_name")
-  email                String        @unique
-  password             String
-  phoneNumber          String?       @map("phone_number")
-  zipCode              String        @map("zip_code")
-  avatarUrl            String?       @map("avatar_url")
-  avatarPublicId       String?       @map("avatar_public_id")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  email          String   @unique
+  password       String
+  phoneNumber    String?  @map("phone_number")
+  zipCode        String   @map("zip_code")
+  avatarUrl      String?  @map("avatar_url")
+  avatarPublicId String?  @map("avatar_public_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   comments             ItemComment[] @relation("UserComments")
   items                Item[]        @relation("UserItems")
@@ -27,6 +27,8 @@ model User {
   seenMarks            SeenMark[]
   threadsAsOwner       Thread[]      @relation("OwnerThreads")
   threadsAsParticipant Thread[]      @relation("ParticipantThreads")
+
+  passwordResetTokens PasswordResetToken[] @relation("UserPasswordResetTokens")
 
   @@map("users")
 }
@@ -65,7 +67,7 @@ model Item {
   @@index([status, dateReported])
   @@index([categoryName])
   @@index([ownerId])
-  @@index([zipCode])            // index by ZIP
+  @@index([zipCode]) // index by ZIP
   @@map("items")
 }
 
@@ -93,7 +95,7 @@ model ItemComment {
 
   @@index([itemId])
   @@index([authorId])
-  @@index([itemId, createdAt])  // index for recent comments
+  @@index([itemId, createdAt]) // index for recent comments
   @@map("item_comments")
 }
 
@@ -114,30 +116,30 @@ model SeenMark {
 
 /// threads
 model Thread {
-  id            String    @id @default(uuid()) @db.Uuid
-  itemId        String    @map("item_id") @db.Uuid
-  ownerId       String    @map("owner_id") @db.Uuid
-  participantId String    @map("participant_id") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  itemId        String   @map("item_id") @db.Uuid
+  ownerId       String   @map("owner_id") @db.Uuid
+  participantId String   @map("participant_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // per-user "read up to" (MVP: двухсторонний диалог)
-  ownerLastReadMessageId       String?   @db.Uuid @map("owner_last_read_message_id")
+  ownerLastReadMessageId       String?   @map("owner_last_read_message_id") @db.Uuid
   ownerLastReadAt              DateTime? @map("owner_last_read_at")
-  participantLastReadMessageId String?   @db.Uuid @map("participant_last_read_message_id")
+  participantLastReadMessageId String?   @map("participant_last_read_message_id") @db.Uuid
   participantLastReadAt        DateTime? @map("participant_last_read_at")
 
-  messages      Message[]
-  item          Item      @relation(fields: [itemId], references: [id])
-  owner         User      @relation("OwnerThreads", fields: [ownerId], references: [id])
-  participant   User      @relation("ParticipantThreads", fields: [participantId], references: [id])
+  messages    Message[]
+  item        Item      @relation(fields: [itemId], references: [id])
+  owner       User      @relation("OwnerThreads", fields: [ownerId], references: [id])
+  participant User      @relation("ParticipantThreads", fields: [participantId], references: [id])
 
+  @@unique([itemId, participantId]) // enforce 1:1 per item+participant
   @@index([itemId])
   @@index([ownerId])
   @@index([participantId])
   @@index([ownerLastReadMessageId])
   @@index([participantLastReadMessageId])
-  @@unique([itemId, participantId])   // enforce 1:1 per item+participant
   @@map("threads")
 }
 
@@ -150,10 +152,10 @@ model Message {
   attachmentUrl String?  @map("attachment_url")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  sender        User     @relation("UserMessages", fields: [senderId], references: [id])
-  thread        Thread   @relation(fields: [threadId], references: [id])
+  sender User   @relation("UserMessages", fields: [senderId], references: [id])
+  thread Thread @relation(fields: [threadId], references: [id])
 
-  // Индексы под пагинацию «новые сверху»
+  // 
   @@index([threadId, createdAt(sort: Desc)])
   @@index([senderId])
   @@map("messages")
@@ -164,4 +166,20 @@ enum ItemStatus {
   LOST     @map("lost")
   FOUND    @map("found")
   RESOLVED @map("resolved")
+}
+
+/// password_reset_tokens
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation("UserPasswordResetTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
