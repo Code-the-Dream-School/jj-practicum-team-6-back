@@ -1,3 +1,4 @@
+// src/controllers/threads/threads.controller.js
 const { prisma } = require('../../utils/prisma');
 const {
   getOrCreateThread,
@@ -6,12 +7,17 @@ const {
   countUnreadForUser,
 } = require('../../repositories/threads/threads.repository');
 
-// POST /api/v1/threads
+// REPLACE this function with the version below
 async function postThread(req, res, next) {
   try {
-    const { itemId, participantId } = req.body;
+    const { itemId } = req.body || {};
+    if (!itemId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'itemId is required' },
+      });
+    }
 
-    // Load item and its owner
     const item = await prisma.item.findUnique({
       where: { id: itemId },
       select: { id: true, ownerId: true },
@@ -23,7 +29,21 @@ async function postThread(req, res, next) {
       });
     }
 
-    // Authorization: only item owner or the participant themselves can create a thread
+    // default current user; still accept legacy participantId
+    const participantId = req.body?.participantId || req.user.id;
+
+    // forbid owner chatting with themselves
+    if (participantId === item.ownerId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'SELF_THREAD_NOT_ALLOWED',
+          message: 'Owner cannot start a thread with themselves',
+        },
+      });
+    }
+
+    // requester must be owner or the participant themselves
     if (req.user.id !== item.ownerId && req.user.id !== participantId) {
       return res.status(403).json({
         success: false,
@@ -36,14 +56,11 @@ async function postThread(req, res, next) {
       ownerId: item.ownerId,
       participantId,
     });
-    
-    // Enrich with computed helpers for the client
+
     const me = req.user.id;
     const payload = {
       ...thread,
-      // expose conversation partner as "otherUser"
       otherUser: thread.ownerId === me ? thread.participant : thread.owner,
-      // convenience field for item thumbnail
       item: {
         ...thread.item,
         primaryPhotoUrl:
@@ -54,18 +71,15 @@ async function postThread(req, res, next) {
     };
 
     return res.status(created ? 201 : 200).json({ success: true, data: payload });
-
   } catch (err) {
     next(err);
   }
 }
 
-// GET /api/v1/threads
 async function getThreads(req, res, next) {
   try {
     const { itemId, page = 1, size = 20 } = req.query;
 
-    // Optional strict check for itemId: only the item owner or an existing participant can see these threads
     if (itemId) {
       const item = await prisma.item.findUnique({
         where: { id: itemId },
@@ -93,7 +107,6 @@ async function getThreads(req, res, next) {
       }
     }
 
-    // Repository now returns threads with `item` and `otherUser` already populated
     const pageNum = Number(page) || 1;
     const sizeNum = Number(size) || 20;
 
@@ -103,15 +116,16 @@ async function getThreads(req, res, next) {
       size: sizeNum,
     });
 
-    // Add computed fields for convenience on the client (no breaking changes)
     const me = req.user.id;
-    const enriched = threads.map(t => ({
+    const enriched = threads.map((t) => ({
       ...t,
       otherUser: t.ownerId === me ? t.participant : t.owner,
       item: {
         ...t.item,
         primaryPhotoUrl:
-          Array.isArray(t.item?.photos) && t.item.photos.length ? t.item.photos[0].url : null,
+          Array.isArray(t.item?.photos) && t.item.photos.length
+            ? t.item.photos[0].url
+            : null,
       },
     }));
 
@@ -127,7 +141,6 @@ async function getThreads(req, res, next) {
   }
 }
 
-// POST /api/v1/threads/:threadId/read
 async function markThreadRead(req, res, next) {
   try {
     const { threadId } = req.params;
@@ -145,30 +158,26 @@ async function markThreadRead(req, res, next) {
 
     return res.status(200).json({
       success: true,
-      thread: updated, // kept for backward-compat
+      thread: updated,
       data: updated,
     });
   } catch (err) {
-    // Prisma UUID error
     if (err.code === 'P2023') {
       return res.status(400).json({
         success: false,
         error: { code: 'INVALID_UUID', message: 'ThreadId or MessageId is invalid' },
       });
     }
-
     if (err.message === 'Thread not found') {
       return res.status(404).json({
         success: false,
         error: { code: 'THREAD_NOT_FOUND', message: 'Thread does not exist' },
       });
     }
-
     next(err);
   }
 }
 
-// GET /api/v1/threads/unread-count
 async function getUnreadCount(req, res, next) {
   try {
     const userId = req.user.id;
