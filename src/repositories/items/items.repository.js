@@ -1,3 +1,4 @@
+// src/repositories/items/items.repository.js
 const { prisma } = require('../../utils/prisma');
 
 const includeRelations = {
@@ -7,7 +8,7 @@ const includeRelations = {
   category: { select: { name: true } },
 };
 
-function buildInclude({ includePhotos, photosOrder } = {}) {
+function buildInclude({ includePhotos, photosOrder, includeCounts = true } = {}) {
   const base = { ...includeRelations };
   if (includePhotos) {
     base.photos = {
@@ -15,7 +16,29 @@ function buildInclude({ includePhotos, photosOrder } = {}) {
       orderBy: { createdAt: photosOrder === 'desc' ? 'desc' : 'asc' },
     };
   }
+  if (includeCounts) {
+    base._count = {
+      select: {
+        seenMarks: true,
+        comments: true,
+      },
+    };
+  }
   return base;
+}
+
+function attachCounts(entity) {
+  if (!entity) return entity;
+  const { _count, ...rest } = entity;
+  return {
+    ...rest,
+    seenCount: _count?.seenMarks ?? 0,
+    commentsCount: _count?.comments ?? 0,
+  };
+}
+
+function attachCountsMany(arr) {
+  return Array.isArray(arr) ? arr.map(attachCounts) : arr;
 }
 
 async function findMany({
@@ -31,14 +54,13 @@ async function findMany({
     geo,
     q,
     zipCodeExact,
-    ownerId, // optional: filter by owner
+    ownerId,
   } = filters || {};
   const { page, limit } = pagination;
   const skip = (page - 1) * limit;
 
   const include = buildInclude({ includePhotos, photosOrder });
 
-  // NO-GEO branch (regular Prisma query)
   if (!geo) {
     const whereAND = [];
 
@@ -59,7 +81,7 @@ async function findMany({
 
     const where = whereAND.length ? { AND: whereAND } : {};
 
-    const [items, total] = await Promise.all([
+    const [itemsRaw, total] = await Promise.all([
       prisma.item.findMany({
         where,
         skip,
@@ -70,10 +92,10 @@ async function findMany({
       prisma.item.count({ where }),
     ]);
 
+    const items = attachCountsMany(itemsRaw);
     return { items, total };
   }
 
-  // GEO branch (raw SQL for distance ordering)
   const lat = Number(geo.lat);
   const lng = Number(geo.lng);
   const radius = Number(geo.radius);
@@ -90,7 +112,6 @@ async function findMany({
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  // IDs within radius (ordered by distance asc, then date desc)
   const idsRows = await prisma.$queryRawUnsafe(`
     WITH base AS (
       SELECT
@@ -116,7 +137,6 @@ async function findMany({
     SELECT id FROM within;
   `);
 
-  // Total count within radius
   const totalRows = await prisma.$queryRawUnsafe(`
     WITH base AS (
       SELECT
@@ -139,15 +159,15 @@ async function findMany({
 
   if (ids.length === 0) return { items: [], total };
 
-  // Load full records and keep custom order
   const itemsUnordered = await prisma.item.findMany({
     where: { id: { in: ids } },
     include,
   });
 
   const orderMap = new Map(ids.map((id, i) => [id, i]));
-  const items = itemsUnordered.sort((a, b) => orderMap.get(a.id) - orderMap.get(b.id));
+  const itemsOrdered = itemsUnordered.sort((a, b) => orderMap.get(a.id) - orderMap.get(b.id));
 
+  const items = attachCountsMany(itemsOrdered);
   return { items, total };
 }
 
@@ -156,14 +176,15 @@ async function findById(
   options = { includePhotos: false, photosOrder: 'asc' }
 ) {
   const include = buildInclude(options);
-  return prisma.item.findUnique({
+  const item = await prisma.item.findUnique({
     where: { id },
     include,
   });
+  return attachCounts(item);
 }
 
 async function create(data, ownerId) {
-  return prisma.item.create({
+  const created = await prisma.item.create({
     data: {
       title: data.title,
       description: data.description ?? null,
@@ -176,14 +197,15 @@ async function create(data, ownerId) {
       owner: { connect: { id: ownerId } },
       category: { connect: { name: data.categoryName } },
     },
-    include: includeRelations,
+    include: buildInclude({ includePhotos: true, photosOrder: 'asc' }),
   });
+  return attachCounts(created);
 }
 
 async function findByOwner(ownerId, { page, limit }) {
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
+  const [itemsRaw, total] = await Promise.all([
     prisma.item.findMany({
       where: { ownerId },
       skip,
@@ -194,11 +216,11 @@ async function findByOwner(ownerId, { page, limit }) {
     prisma.item.count({ where: { ownerId } }),
   ]);
 
+  const items = attachCountsMany(itemsRaw);
   return { items, total };
 }
 
 async function updateByOwner(id, ownerId, data) {
-  // Ownership check
   const found = await prisma.item.findUnique({
     where: { id },
     select: { id: true, ownerId: true },
@@ -211,7 +233,6 @@ async function updateByOwner(id, ownerId, data) {
     throw err;
   }
 
-  // Dynamic patch
   const patch = {};
   if (data.title !== undefined) patch.title = data.title;
   if (data.description !== undefined) patch.description = data.description;
@@ -226,15 +247,16 @@ async function updateByOwner(id, ownerId, data) {
     patch.isResolved = true;
   }
 
-  return prisma.item.update({
+  const updated = await prisma.item.update({
     where: { id },
     data: patch,
-    include: includeRelations,
+    include: buildInclude({ includePhotos: true, photosOrder: 'asc' }),
   });
+
+  return attachCounts(updated);
 }
 
 async function deleteByOwner(id, ownerId) {
-  // Ownership check
   const found = await prisma.item.findUnique({
     where: { id },
     select: { id: true, ownerId: true },
@@ -247,7 +269,6 @@ async function deleteByOwner(id, ownerId) {
     throw err;
   }
 
-  // Manual cascade cleanup
   await prisma.$transaction([
     prisma.message.deleteMany({ where: { thread: { itemId: id } } }),
     prisma.thread.deleteMany({ where: { itemId: id } }),
