@@ -2,7 +2,7 @@ const { prisma } = require('../../utils/prisma');
 
 const includeRelations = {
   owner: {
-    select: { id: true, firstName: true, lastName: true, email: true },
+    select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
   },
   category: { select: { name: true } },
 };
