@@ -2,9 +2,11 @@
 
 Backend for the **[Retrieve](https://jj-practicum-team-6-back.onrender.com/api/v1)** – a simple, safe, community-driven platform to quickly report, find, and recover lost items in public spaces.
 
-Lost or Found Something? -→ USE **[RETRIEVE](https://jj-practicum-team-6-back.onrender.com/api/v1)}}
+Lost or Found Something? → USE **[RETRIEVE](https://jj-practicum-team-6-back.onrender.com/api/v1)**
 
 Built with **Node.js, Express, PostgreSQL, and Prisma**, this API provides authentication, secure item posting, messaging, and map integration.
+
+👉 [**Front end**](https://github.com/Code-the-Dream-School/jj-practicum-team-6-front)
 
 ## Tech Stack
 
@@ -16,7 +18,7 @@ Built with **Node.js, Express, PostgreSQL, and Prisma**, this API provides authe
 - **Logging:** pino
 - **Environment Variables:** dotenv
 - **Code Quality:** ESLint + Prettier
-- **Testing:** Jest + Supertest
+- **Testing:** Postman
 
 ### Setting up local development environment
 
@@ -96,5 +98,17 @@ API is deployed on Render: **[Retrieve](https://jj-practicum-team-6-back.onrende
 - **Seen Marks → Contact Flow** – show the list of users who marked “Seen it” and let the owner start a message thread
 - **User Ratings** – enable community ratings to build trust and reputation
 - **Push & Email Notifications** – automatic alerts for new messages, comments, or matching items
+
+PowerPoint presentation: [**Retrieve Slides**](https://docs.google.com/presentation/d/1kmkmQmopy_FSHxKi34KFXDexV-gsfafNM_O4dGANZxg/edit?slide=id.g37fb6f1c553_0_105#slide=id.g37fb6f1c553_0_105)
+
+## Acknowledgments
+This journey wouldn’t have been possible without the incredible people who made it happen:
+
+**Mentors**: John McGarvey and KJ Loving, for their invaluable guidance and encouragement.
+
+And a hard-working team that turned vision into reality:
+
+**Development Back End Team**: Aida Burlutckaia, Vera Fesianava
+**Development Front End Team**: Alina Dalantaeva, Hemang Limbachiya, Masouma Ahmadi Jay
 
 Thank you for exploring **Retrieve**. Together, let's make acts of kindness easier, more accessible, and more impactful! 
