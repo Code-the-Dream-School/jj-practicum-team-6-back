@@ -1,12 +1,22 @@
-# Back-End Repo for Node/React Practicum
+# Back-End Repo for Node/React Practicum -Team 6
 
-This will be the API for the front-end React app part of your practicum project.
+Backend for the **[Retrieve](https://jj-practicum-team-6-back.onrender.com/api/v1)** – a simple, safe, community-driven platform to quickly report, find, and recover lost items in public spaces.
 
-These instructions are for the **front-end team** so they can setup their local development environment to run 
-both the back-end server and their front-end app. You can go through these steps during your first group meeting 
-in case you need assistance from your mentors.
+Lost or Found Something? -→ USE **[RETRIEVE](https://jj-practicum-team-6-back.onrender.com/api/v1)}}
 
->The back-end server will be running on port 8000. The front-end app will be running on port 3000. You will need to run both the back-end server and the front-end app at the same time to test your app.
+Built with **Node.js, Express, PostgreSQL, and Prisma**, this API provides authentication, secure item posting, messaging, and map integration.
+
+## Tech Stack
+
+- **Runtime:** Node.js 20+
+- **Framework:** Express 5 (or 4)
+- **Database:** PostgreSQL + Prisma Client (JS)
+- **Validation:** Zod
+- **Auth & Security:** JWT (HS256), helmet
+- **Logging:** pino
+- **Environment Variables:** dotenv
+- **Code Quality:** ESLint + Prettier
+- **Testing:** Jest + Supertest
 
 ### Setting up local development environment
 
@@ -17,17 +27,7 @@ in case you need assistance from your mentors.
 5. Run `npm run dev` to start the development server
 6. Open http://localhost:8000/api/v1/ with your browser to test.
 7. Your back-end server is now running. You can now run the front-end app.
-
-#### Running the back-end server in Visual Studio Code
-
-Note: In the below example, the group's front-end repository was named `bb-practicum-team1-front` and the back-end repository was named `bb-practicum-team-1-back`. Your repository will have a different name, but the rest should look the same.
-![vsc running](images/back-end-running-vsc.png)
-
-#### Testing the back-end server API in the browser
-
-![browser server](images/back-end-running-browser.png)
-
->Update the .node-version file to match the version of Node.js the **team** is using. This is used by Render.com to [deploy the app](https://render.com/docs/node-version).
+8. Copy .env.example file in the project root :  `cp .env.example .env`
 
 ## DB setup (dev)
 
@@ -37,13 +37,14 @@ Note: In the below example, the group's front-end repository was named `bb-pract
 ```bash
 npx prisma generate
 npx prisma migrate dev --name erd_full_init
-3) Start the API:
-npm run dev
-Verify Postgres is reachable:
-curl http://localhost:8000/healthz/db
+```
+3) Start the API: `npm run dev`
+4) Verify Postgres is reachable: `curl http://localhost:8000/healthz/db`
+
 Expected:
-{"success":true,"data":{"db":true}}
-Notes: keep real secrets only in local .env / deployment env vars; don’t commit them.
+`{"success":true,"data":{"db":true}}`
+
+>Notes: keep real secrets only in local .env / deployment env vars; don’t commit them.
 
 ## Seeding (Demo Data)
 
@@ -52,7 +53,48 @@ This project includes a Prisma seed script to create:
 - one **demo user**
 - 3–4 **demo items** linked to that user and categories
 
-### Prerequisites
-1. Copy env:
-   ```bash
-   cp .env.example .env
+## Scripts
+```bash
+`nodemon src/server.js` – start in dev mode (nodemon)
+`node src/server.js` – start in production
+`eslint . --fix` – check code style with ESLint
+`prettier --write .` – format with Prettier
+```
+## API Features (MVP)
+- **Auth & Security** - JWT sessions, password hashing
+- **Item Posts** - photo, description, map pin
+= **Seen It** - mark items as seen, notify owner
+- **Comments & Messages** - user communication
+- **Map Integration** - location browsing (Leaflet + Zippopotam.us API)
+- **Radius Filter** – use current location and adjust a slider to show items within a chosen radius
+- **Responsive API** - mobile-first, clean UI
+
+## Security Notes
+- **JWT** (HS256) for authentication
+- **Helmet** middleware for basic security headers
+- Input validation with **Zod**
+- Logging with **Pino**
+
+## API Documentation
+All endpoints are documented in the included Postman collection: `/postman`
+
+Import it into Postman to explore available routes and test requests.
+
+### Teardown & Reset
+To reset your local database and reseed demo data:
+
+```bash
+npx prisma migrate reset --force
+npx prisma db seed
+```
+
+## Deployment
+API is deployed on Render: **[Retrieve](https://jj-practicum-team-6-back.onrender.com/api/v1)**
+
+## Next Steps
+- **Admin & User Reports** – introduce admin role with tooling to review, flag, and action user reports
+- **Seen Marks → Contact Flow** – show the list of users who marked “Seen it” and let the owner start a message thread
+- **User Ratings** – enable community ratings to build trust and reputation
+- **Push & Email Notifications** – automatic alerts for new messages, comments, or matching items
+
+Thank you for exploring **Retrieve**. Together, let's make acts of kindness easier, more accessible, and more impactful! 
